@@ -66,7 +66,7 @@ The research review tilts the *criteria* toward GOFF; Gates 1 and 2 are the two 
 These are open items from ADR 0001/0002 that gate implementation start; the engine pick alone does not make ADR 0002 ratifiable.
 
 - [ ] **Facade ownership assigned.** Name the team that owns the library, its versioning, the on-call rotation for the evaluation path, **and** the B1 stale-flag governance job. (Open since ADR 0001; the B1 job now rides on this owner.)
-- [ ] **B2 interaction-scan scope decided.** Confirm the fleet-level flag-interaction scan stays a build-time static scan, or split it into **ADR 0003** if it grows into its own subsystem (per Part B's scope check).
+- [ ] **B2 interaction-scan scope confirmed.** Ratify **ADR 0003 (draft)** (`0003-cross-service-flag-interaction-scan.md`), which decides interaction visibility is a build-time static scan (Tier 1) with a defined escalation trigger to a runtime subsystem (Tier 2 → future ADR). Confirm its Tier-1 scope and read-only/advisory contract.
 - [ ] **InMemoryFlagEngine + AWS Parameter Store path confirmed cached.** Verify overrides are cached, not read per-evaluation, so the bridge mode does not itself violate B3's "no I/O on the hot path" property (`../docs/feature-flags-facade-design.md` §4).
 
 ---
