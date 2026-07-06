@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.acme.flags</groupId>
+        <artifactId>flags-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>flags-bom</artifactId>
+    <packaging>pom</packaging>
+    <name>Flags BOM</name>
+    <description>Dependency-management BOM pinning consistent versions across all published flags-* artifacts.</description>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.acme.flags</groupId>
+                <artifactId>flags-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.acme.flags</groupId>
+                <artifactId>flags-noop</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.acme.flags</groupId>
+                <artifactId>flags-test-fixtures</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.acme.flags</groupId>
+                <artifactId>flags-contract-test</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.acme.flags</groupId>
+                <artifactId>flags-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>

@@ -18,6 +18,7 @@
         <module>flags-noop</module>
         <module>flags-test-fixtures</module>
         <module>flags-spring-boot-starter</module>
+        <module>flags-bom</module>
     </modules>
 
     <properties>
