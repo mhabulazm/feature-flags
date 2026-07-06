@@ -1,6 +1,6 @@
 # ADR 0003: Cross-Service Flag Interaction Visibility via a Build-Time Static Scan
 
-> **Draft — notes toward a decision.** Not accepted. This ADR takes up the scope-check ADR 0002 Part B (B2) deferred to it: whether cross-service flag-interaction visibility stays a scan or becomes its own subsystem. It needs team ratification before moving to *Accepted*, and resolves the "B2 interaction-scan scope decided" blocker in `0002-ratification-checklist.md`. Citation markers `[n]` refer to the numbered list in `../docs/feature-flags-research-references.md`.
+> **Draft — notes toward a decision.** Not accepted. This ADR takes up the scope-check ADR 0002 Part B (B2) deferred to it: whether cross-service flag-interaction visibility stays a scan or becomes its own subsystem. It needs team ratification before moving to *Accepted*, and resolves the B2 interaction-scan-scope blocker in `0002-ratification-checklist.md`. Citation markers `[n]` refer to the numbered list in `../docs/feature-flags-research-references.md`.
 
 ## Status
 
@@ -66,12 +66,12 @@ Carry forward ADR 0002's guardrail unchanged: the scan is **read-only** over the
 - **Cross-repo aggregation mechanism** — how a fleet-level scan discovers and reads every service's `FlagKey` registry (monorepo view, a published registry artifact per service, or a CI aggregation step). Decide before implementation.
 - **Interaction heuristic precision** — the exact rule for "referenced in combination" (AST co-reference scope, how deep nesting is followed), and the acceptable false-positive rate for an advisory report.
 - **Graduation criteria** — whether Tier 1 ever moves from advisory to blocking for a subset of interactions (e.g. cross-service references to a `FAIL_CLOSED` flag), and the Tier-2 count threshold.
-- **Ownership** — confirmed as the facade owner (open item in `0002-ratification-checklist.md`), who runs this scan alongside the B1 stale-flag job.
+- **Ownership** — the facade owner (still an open item in `0002-ratification-checklist.md`) runs this scan alongside the B1 stale-flag job.
 
 ## References
 
 - `0002-select-flag-engine-and-evolve-facade-operating-model.md` — Part B item B2, which this ADR implements and bounds.
-- `0002-ratification-checklist.md` — lists the "B2 interaction-scan scope decided" blocker this ADR resolves.
+- `0002-ratification-checklist.md` — lists the B2 interaction-scan-scope blocker this ADR resolves.
 - `0001-adopt-in-house-facade-alongside-flag-engine.md` — the "never own a second copy of state" guardrail this inherits.
 - `../docs/feature-flags-facade-design.md` — §5 (per-service registries) the scan aggregates over.
 - `../docs/feature-flags-research-references.md` — sources behind `[n]` markers; [2] (practices catalog / Knight Capital) and [4] (Tërnava et al., *On the Interaction of Feature Toggles*).

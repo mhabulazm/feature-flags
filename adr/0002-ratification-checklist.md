@@ -84,7 +84,8 @@ These are open items from ADR 0001/0002 that gate implementation start; the engi
 
 **On sign-off:**
 1. Update ADR 0002's **Status** from *Proposed (draft)* to *Accepted* (note the ratified engine and this checklist).
-2. Unblock the `flags-engine-*` adapter work against the existing `flags-contract-test` conformance suite, toward the `1.0.0` cut described in `../docs/feature-flags-facade-design.md` §8.
+2. If the B2 blocker was satisfied by confirming ADR 0003's scope, update **ADR 0003**'s Status from *Proposed (draft)* to *Accepted* as well.
+3. Unblock the `flags-engine-*` adapter work against the existing `flags-contract-test` conformance suite, toward the `1.0.0` cut described in `../docs/feature-flags-facade-design.md` §8.
 
 ## References
 
