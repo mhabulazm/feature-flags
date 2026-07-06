@@ -17,11 +17,11 @@ class VendorFreedomArchTest {
                 .importPackages("com.acme.flags");
 
         ArchRule rule = classes()
-                .that().resideInAnyPackage("com.acme.flags.api", "com.acme.flags.spi")
+                .that().resideInAnyPackage("com.acme.flags.api..", "com.acme.flags.spi..")
                 .should().onlyDependOnClassesThat()
                 .resideInAnyPackage(
-                        "com.acme.flags.api",
-                        "com.acme.flags.spi",
+                        "com.acme.flags.api..",
+                        "com.acme.flags.spi..",
                         "io.micrometer..",
                         "org.slf4j..",
                         "java..");
