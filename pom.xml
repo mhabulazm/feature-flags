@@ -15,6 +15,7 @@
     <modules>
         <module>flags-api</module>
         <module>flags-contract-test</module>
+        <module>flags-noop</module>
     </modules>
 
     <properties>
