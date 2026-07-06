@@ -4,7 +4,7 @@
 
 ## Status
 
-Proposed (draft). Supersedes parts of ADR 0001's governance and guardrail sections as noted in Part B. Blocks implementation start until Part A is ratified.
+Proposed (draft). Supersedes parts of ADR 0001's governance and guardrail sections as noted in Part B. Blocks implementation start until Part A is ratified. Ratification is gated by the checklist in `0002-ratification-checklist.md` — complete both engine gates and the non-engine blockers there before changing this Status to *Accepted*.
 
 ## Context
 
