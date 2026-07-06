@@ -17,6 +17,7 @@
         <module>flags-contract-test</module>
         <module>flags-noop</module>
         <module>flags-test-fixtures</module>
+        <module>flags-spring-boot-starter</module>
     </modules>
 
     <properties>
