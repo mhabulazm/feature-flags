@@ -21,26 +21,30 @@ public final class DefaultFeatureFlags implements FeatureFlags {
     public boolean isEnabled(FlagKey flag, FlagContext context) {
         boolean defaultValue = flag.metadata().defaultValue();
         boolean result;
+        boolean fallback = false;
         try {
             result = engine.evaluateBoolean(flag.key(), context.toMap(), defaultValue);
         } catch (RuntimeException e) {
             result = defaultValue;
+            fallback = true;
             log.warn("Flag engine unavailable, falling back to default value for {}", flag.key(), e);
         }
-        recordEvaluation(flag.key(), result);
+        recordEvaluation(flag.key(), fallback);
         return result;
     }
 
     @Override
     public <T> T getVariant(FlagKey flag, Class<T> type, T defaultValue, FlagContext context) {
         T result;
+        boolean fallback = false;
         try {
             result = engine.evaluateVariant(flag.key(), context.toMap(), type, defaultValue);
         } catch (RuntimeException e) {
             result = defaultValue;
+            fallback = true;
             log.warn("Flag engine unavailable, falling back to default value for {}", flag.key(), e);
         }
-        recordEvaluation(flag.key(), result);
+        recordEvaluation(flag.key(), fallback);
         return result;
     }
 
@@ -49,7 +53,8 @@ public final class DefaultFeatureFlags implements FeatureFlags {
         return getVariant(key, key.type(), key.defaultValue(), context);
     }
 
-    private void recordEvaluation(String flagKey, Object result) {
-        metrics.counter("feature_flag.evaluated", "flag", flagKey, "result", String.valueOf(result)).increment();
+    private void recordEvaluation(String flagKey, boolean fallback) {
+        metrics.counter("feature_flag.evaluated", "flag", flagKey, "outcome", fallback ? "fallback" : "matched")
+                .increment();
     }
 }

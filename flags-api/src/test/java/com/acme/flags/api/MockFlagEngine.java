@@ -17,6 +17,10 @@ final class MockFlagEngine implements FlagEngine {
         this.fixedBooleanResult = value;
     }
 
+    void returnVariant(Object value) {
+        this.fixedVariantResult = value;
+    }
+
     @Override
     public boolean evaluateBoolean(String key, Map<String, String> context, boolean defaultValue) {
         if (throwOnEvaluate) {

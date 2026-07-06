@@ -45,12 +45,22 @@ class DefaultFeatureFlagsTest {
     }
 
     @Test
-    void isEnabled_recordsMetric_withFlagKeyAndResult() {
+    void isEnabled_recordsMetric_withMatchedOutcome_whenEngineSucceeds() {
         engine.returnBoolean(true);
 
         flags.isEnabled(BOOL_FLAG, FlagContext.anonymous());
 
-        double count = metrics.counter("feature_flag.evaluated", "flag", BOOL_FLAG.key(), "result", "true").count();
+        double count = metrics.counter("feature_flag.evaluated", "flag", BOOL_FLAG.key(), "outcome", "matched").count();
+        assertThat(count).isEqualTo(1.0);
+    }
+
+    @Test
+    void isEnabled_recordsMetric_withFallbackOutcome_whenEngineThrows() {
+        engine.throwOnEvaluate();
+
+        flags.isEnabled(BOOL_FLAG, FlagContext.anonymous());
+
+        double count = metrics.counter("feature_flag.evaluated", "flag", BOOL_FLAG.key(), "outcome", "fallback").count();
         assertThat(count).isEqualTo(1.0);
     }
 
@@ -61,6 +71,18 @@ class DefaultFeatureFlagsTest {
         String result = flags.getVariant(BOOL_FLAG, String.class, "fallback", FlagContext.anonymous());
 
         assertThat(result).isEqualTo("fallback");
+    }
+
+    @Test
+    void getVariant_recordsMetric_withoutTaggingRawValue() {
+        engine.returnVariant("some-arbitrary-value");
+
+        flags.getVariant(BOOL_FLAG, String.class, "default", FlagContext.anonymous());
+
+        double matchedCount =
+                metrics.counter("feature_flag.evaluated", "flag", BOOL_FLAG.key(), "outcome", "matched").count();
+        assertThat(matchedCount).isEqualTo(1.0);
+        assertThat(metrics.find("feature_flag.evaluated").tag("result", "some-arbitrary-value").counter()).isNull();
     }
 
     @Test
