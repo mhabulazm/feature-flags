@@ -13,6 +13,7 @@
     <description>Parent reactor for the in-house feature-flag facade (ADR 0001 "alongside" pattern).</description>
 
     <modules>
+        <module>flags-api</module>
     </modules>
 
     <properties>
