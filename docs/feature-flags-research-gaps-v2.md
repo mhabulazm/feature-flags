@@ -84,6 +84,19 @@ ADR 0001 chose an in-process facade library over calling a vendor SDK directly o
 
 ---
 
+## Recommended actions
+
+| Thread | Finding type(s) | Recommended next step |
+|---|---|---|
+| 1. Engine selection | Validates [18], Gap [19], Enhancement [20] | No action on the engine pick itself — validates ADR 0002 Part A's OpenFeature-standardization argument. Reword the "no new adapter at all" claim in ADR 0002 Part A to "adapter code shrinks, not disappears" per [19]'s caveat. |
+| 2. B1 governance | Validates [21], Enhancement [22], Gap [23] | No action needed on the notify-only design — validated at Microsoft scale. File a follow-up task (not blocking ADR 0002 ratification) to add a time-to-acknowledgment trend metric to the stale-flag job, guarding against notification fatigue [23]. Commit-message mining [22] is a v2 idea, not required for the first release. |
+| 3. B2 interaction scan | Validates [24], Enhancement [25], Better alternative [26] | No action needed for ADR 0003 Tier 1's shape — validated, with a concrete ~90% false-positive expectation to set at ratification, not discover after shipping. Note the similarity-based triage idea [25] as an explicit "Tier 1.5" follow-up in ADR 0003's open questions once a corpus of reviewed findings exists. Feature-aware verification [26] confirms the Tier-2 trigger's target shape — no action now. |
+| 4. B3 context resolution | Validates [27], Enhancement [28], Gap [29] | **Action required** — amend ADR 0002 B3 to explicitly resolve its own documented contradiction in favor of the no-I/O default [27]: implement `FlagContext.current()` against already-request-scoped data (`flags-api/src/main/java/com/acme/flags/api/FlagContext.java`), not a live call. If a live entitlements call is added later, mandate an adaptive (not static) timeout [28] and require a benchmark before trusting the resilience library on the hot path [29]. |
+| 5. Facade pattern validity | Validates [30], Validates [31], Gap [31→GOFF relay-proxy] | No action on the in-process facade decision itself — strongly validated over an out-of-process/sidecar shape. Add a benchmarking action item to ADR 0002/0003 follow-ups: quantify GOFF relay-proxy mode's latency/CPU tax before recommending it for any polyglot or multi-tenant use case. |
+| 6. Fallback strategy | Gap [32], Gap [33], Enhancement [34] | **Action required** — file an implementation task against `DefaultFeatureFlags.java` to replace the broad `catch (RuntimeException e)` with a dedicated `FlagEngineUnavailableException` type, narrowing the catch clause; add an ArchUnit rule enforcing it, alongside the existing `VendorFreedomArchTest`. Independent of, and smaller than, the Thread 4 circuit-breaker question. |
+
+---
+
 ## References
 
 18. [Using open standards for interoperability issues, solutions, and challenges facing cloud computing](https://consensus.app/papers/details/d87b2cfafead57988e10ba8a963ce21b/?utm_source=claude_desktop) (Harsh et al., 2012, 2012 8th International Conference on Network and Service Management, 40 citations)

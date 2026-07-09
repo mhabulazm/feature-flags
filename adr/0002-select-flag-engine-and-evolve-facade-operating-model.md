@@ -79,6 +79,7 @@ One amendment for the new tooling: the B1 governance job and the B2 interaction 
 
 - `0001-adopt-in-house-facade-alongside-flag-engine.md` — the decision this evolves
 - `../docs/feature-flags-research-references.md` — the 17 numbered sources and their mapping to each artifact
+- `../docs/feature-flags-research-gaps-v2.md` — follow-up research pass on gaps/alternatives/enhancements, including a live code-review finding on `FlagContext.current()` (Thread 4) and `DefaultFeatureFlags`'s exception handling (Thread 6)
 - `../docs/feature-flags-facade-design.md` — §5 (registries), §6 (governance), §4 (bridge engines) amended by Part B
 - `../docs/feature-flags-facade-sketch.md` — §3/§5 (context resolution, failure policy) amended by B3
 - `../docs/feature-flags-comparison.md`, `../docs/feature-flags-use-cases.md` — the "facade tax" framing (B4) and the "no I/O" claim (B3)

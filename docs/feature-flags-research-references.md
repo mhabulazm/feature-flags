@@ -4,6 +4,8 @@ Companion to [ADR 0001](../adr/0001-adopt-in-house-facade-alongside-flag-engine.
 
 Sources found via academic search (Consensus, over Semantic Scholar / PubMed / Scopus / ArXiv) on 2026-07-03; citation counts are as of that date. Experimentation and canary-analysis literature was deliberately out of scope.
 
+> **Second pass:** see [`feature-flags-research-gaps-v2.md`](feature-flags-research-gaps-v2.md) for a follow-up thread targeting gaps, alternatives, and enhancements found during code review (engine reconsideration, B1/B2/B3, facade pattern validity, fallback strategy).
+
 > Scope note: the pure design-pattern ideas this project leans on — facade, anti-corruption layer — live in practitioner literature (Fowler, DDD), not peer-reviewed venues. The academic mapping therefore runs through *portability/abstraction* and *resilience-pattern* research, which is why those searches landed and a literal "anti-corruption layer" search would not.
 
 ---
