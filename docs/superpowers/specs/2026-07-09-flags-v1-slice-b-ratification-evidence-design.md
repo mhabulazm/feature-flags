@@ -4,6 +4,12 @@
 
 Draft — ready to implement, unblocked by ADR 0002 ratification (this slice exists to *produce* the evidence ratification needs, not to depend on it). Part of the [v1 roadmap](../../feature-flags-v1-roadmap.md).
 
+**Implementation status (this pass):**
+- **Parameter Store caching evidence is complete and verified** (`flags-noop`) — `InMemoryFlagEngine` empirically shown to add no I/O on the hot path (100,000 calls in ~36ms).
+- **Gate 1 is NOT satisfied.** The harness (`flags-benchmark-goff`) compiles against real OpenFeature/GOFF dependencies but has never been run — no Docker in the environment this was built in. Worse than originally planned: the pinned GOFF provider (`0.4.3`) turned out to lack the `EvaluationType.IN_PROCESS`/`REMOTE` toggle entirely (that API only exists from provider `1.0.0`+, which forces a coordinated `dev.openfeature:sdk` bump to `>= 1.16.0` plus a new Chicory WASM runtime dependency — a real architectural decision, not something absorbed into this pass). The harness as shipped can only produce **relay-proxy/REMOTE-mode** evidence — the *secondary* evidence per this spec's own framing — not the embedded/IN_PROCESS mode this spec calls "the primary evidence Gate 1 needs." See `flags-benchmark-goff/README.md` for the full remediation-cost breakdown.
+- **Gate 2's runbook** (`../../feature-flags-v1-slice-b-gate2-runbook.md`) is written but not yet executed with a real non-engineer.
+- **Net effect:** neither Gate 1 nor Gate 2 can be signed off from this pass alone. What this pass delivers is the mechanism plus an honest accounting of what's still missing — most notably a dependency-stack decision (upgrade the GOFF provider + SDK + WASM runtime, or get this spec's Gate 1 requirement revised to accept relay-proxy-only evidence) that belongs to whoever picks up Slice B next, not to this implementation pass.
+
 ## Purpose
 
 [`adr/0002-ratification-checklist.md`](../../../adr/0002-ratification-checklist.md) defines two engine-selection gates and one non-engine blocker that must be resolved before ADR 0002 can move from *Proposed (draft)* to *Accepted*. This slice builds whatever's needed to gather that evidence. **It does not itself ratify anything** — every threshold in the source checklist is explicitly labeled PROPOSED ("no real load figures exist in this repo yet... treat every PROPOSED value as a starting point to confirm or replace at the ratification meeting"), and this spec preserves that framing rather than silently hardening any number into a real target.
