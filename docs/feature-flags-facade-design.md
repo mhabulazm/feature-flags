@@ -80,7 +80,9 @@ public final class FlagContext {
     private final Map<String, String> traits;
 
     public static FlagContext current() {
-        // resolves from request-scoped tenant/security context; see §6 for trait sourcing
+        // resolves from FlagContextHolder (a ThreadLocal), populated by flags-spring-boot-starter's
+        // FlagContextFilter from the active FlagContextResolver bean; see the Slice A spec for the
+        // full design: docs/superpowers/specs/2026-07-09-flags-v1-slice-a-facade-hardening-design.md
     }
 
     public static FlagContext forTenant(String tenantId) { ... }
