@@ -4,9 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class FlagContextTest {
+
+    @AfterEach
+    void clearContext() {
+        FlagContextHolder.clear();
+    }
 
     @Test
     void anonymous_hasNoTenantOrUserAndEmptyTraits() {
@@ -34,5 +40,13 @@ class FlagContextTest {
     @Test
     void current_returnsAnonymousContext() {
         assertThat(FlagContext.current()).isEqualTo(FlagContext.anonymous());
+    }
+
+    @Test
+    void current_returnsHeldContext_whenSet() {
+        FlagContext context = FlagContext.forTenant("tenant-7");
+        FlagContextHolder.set(context);
+
+        assertThat(FlagContext.current()).isEqualTo(context);
     }
 }

@@ -27,9 +27,9 @@ public final class FlagContext {
         return ANONYMOUS;
     }
 
-    // No web-framework integration exists yet; returns anonymous() until a real caller-supplied context exists.
     public static FlagContext current() {
-        return ANONYMOUS;
+        FlagContext held = FlagContextHolder.get();
+        return held != null ? held : ANONYMOUS;
     }
 
     public String tenantId() {
