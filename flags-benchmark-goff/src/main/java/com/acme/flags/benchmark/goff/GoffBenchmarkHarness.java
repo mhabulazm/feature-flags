@@ -27,7 +27,7 @@ import org.testcontainers.utility.MountableFile;
  * property is a separate, already-argued claim (see Slice A and the Context Object pattern research
  * in feature-flags-research-gaps-v2.md Thread 4), not something this harness needs to re-prove.
  *
- * <h2>Known gap: no embedded/{@code IN_PROCESS} mode at this module's pinned provider version</h2>
+ * <h2>Gate 1 blocker: no embedded/{@code IN_PROCESS} mode at this module's pinned provider version</h2>
  *
  * <p>The design spec (Gate 1, "deployment mode must be explicit and singular per run") calls for
  * embedded/library-mode evidence as the <em>primary</em> thing Gate 1 needs, with relay-proxy mode
@@ -51,12 +51,26 @@ import org.testcontainers.utility.MountableFile;
  *
  * <p>Consequence: this harness currently produces <strong>relay-proxy/{@code REMOTE}-mode numbers
  * only</strong>. It does not, and as written cannot, produce the embedded-mode evidence Gate 1
- * primarily asks for. This is a real gap for whoever advances Slice B, not a simplification made in
- * this pass -- the options are (a) bump this module's GOFF provider dependency to {@code >= 1.0.0}
- * and re-verify this harness's API usage against the newer jar (bytecode-verified above to expose
- * {@code .evaluationType(EvaluationType.IN_PROCESS)}), or (b) accept relay-proxy-only evidence and
- * get the design spec's Gate 1 requirement explicitly revised to match. Neither decision belongs in
- * this task.
+ * primarily asks for. <strong>Gate 1 is therefore NOT satisfied by this module as it stands</strong> --
+ * relay-proxy/{@code REMOTE} numbers are the secondary evidence the design spec allows, not a
+ * substitute for the primary embedded-mode evidence it requires, and that primary evidence remains
+ * unproduced. This is a blocker for Slice B / Gate 1 sign-off, not a minor caveat, and it is a real
+ * gap for whoever advances Slice B, not a simplification made in this pass.
+ *
+ * <p>Bumping the GOFF provider to {@code >= 1.0.0} is <strong>not a one-line version change</strong>
+ * -- it is a coordinated dependency-stack change. Dependency resolution confirms provider
+ * {@code 1.0.0} requires {@code dev.openfeature:sdk >= 1.16.0} (this module pins sdk
+ * {@code 1.15.1}, below that floor), and provider {@code 1.2.0} (latest) requires
+ * {@code sdk >= 1.21.0}; either provider bump therefore forces an SDK bump in the same change.
+ * Separately, {@code IN_PROCESS} mode at provider {@code 1.0.0+} works by executing a bundled WASM
+ * evaluator through the Chicory WASM runtime ({@code com.dylibso.chicory:runtime}/{@code wasi}) --
+ * a new runtime subsystem this module does not currently depend on, not a lightweight addition. So
+ * the real remediation is: bump {@code dev.openfeature:sdk} to {@code >= 1.16.0} (or
+ * {@code >= 1.21.0} for provider {@code 1.2.0}) together with the GOFF provider bump, plus add the
+ * Chicory WASM runtime dependency, all in one coordinated change -- a genuine architectural decision
+ * for whoever owns Slice B next, not a quick fix. The alternative is (b) accept relay-proxy-only
+ * evidence and get the design spec's Gate 1 requirement explicitly revised to match. Neither
+ * decision belongs in this task.
  *
  * <h2>Request timeout</h2>
  *
