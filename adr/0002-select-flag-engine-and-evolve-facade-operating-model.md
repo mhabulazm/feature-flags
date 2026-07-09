@@ -4,7 +4,7 @@
 
 ## Status
 
-Proposed (draft). Supersedes parts of ADR 0001's governance and guardrail sections as noted in Part B. Blocks implementation start until Part A is ratified.
+Proposed (draft). Supersedes parts of ADR 0001's governance and guardrail sections as noted in Part B. Blocks implementation start until ratified. Ratification is gated by the checklist in `0002-ratification-checklist.md` — complete both engine gates and the non-engine blockers there before changing this Status to *Accepted*.
 
 ## Context
 
@@ -72,7 +72,7 @@ One amendment for the new tooling: the B1 governance job and the B2 interaction 
 
 - **Ratify the engine (GOFF recommended).** The one item needing human sign-off before *Accepted* — decide against our real peak load and self-serve requirements, per Part A's flip conditions.
 - **Facade ownership** — still open from ADR 0001: which team owns the library, its versioning, and the on-call rotation for the evaluation path (now also owns the B1 governance job).
-- **Interaction detection scope (B2)** — confirm whether it stays a build-time scan or warrants ADR 0003.
+- **Interaction detection scope (B2)** — split into **ADR 0003 (draft)** (`0003-cross-service-flag-interaction-scan.md`), which decides it stays a build-time static scan (Tier 1) behind an escalation trigger to a runtime subsystem (Tier 2 → future ADR); confirm that scope at ratification.
 - **`InMemoryFlagEngine` + AWS Parameter Store path** (`feature-flags-facade-design.md` §4) — confirm overrides are cached, not read per-evaluation, so this bridge mode doesn't itself violate the B3 "no I/O on the hot path" property.
 
 ## References

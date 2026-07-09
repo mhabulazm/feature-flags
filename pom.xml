@@ -16,6 +16,7 @@
         <module>flags-api</module>
         <module>flags-contract-test</module>
         <module>flags-noop</module>
+        <module>flags-engine-goff</module>
         <module>flags-test-fixtures</module>
         <module>flags-spring-boot-starter</module>
         <module>flags-bom</module>
