@@ -9,9 +9,11 @@ import java.util.Map;
  * <p><strong>Status: pre-ratification skeleton.</strong> GOFF is the <em>recommended</em> engine in
  * ADR 0002 but is not yet ratified, and ADR 0002 blocks implementation start until it is. This class
  * defines the adapter's shape without pulling in the OpenFeature/GOFF dependency or implementing
- * evaluation. Both methods throw {@link UnsupportedOperationException}; behind
- * {@code DefaultFeatureFlags} — which wraps engine calls in try/catch and falls back to the flag's
- * default — that surfaces as safe, default-valued evaluation rather than a crash.
+ * evaluation. Both methods throw {@link UnsupportedOperationException}, which — unlike
+ * {@link com.acme.flags.spi.FlagEngineUnavailableException} — is <strong>not</strong> caught by
+ * {@code DefaultFeatureFlags}'s narrowed fallback handling, so calling this skeleton live would
+ * propagate a real exception rather than silently falling back. Nothing wires it live today:
+ * {@code FlagsAutoConfiguration} has no {@code goff} branch yet.
  *
  * <p>To complete on ratification: add the {@code dev.openfeature:sdk} + GO Feature Flag provider
  * dependencies (see {@code pom.xml}), inject a configured OpenFeature {@code Client}, implement the
