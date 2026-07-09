@@ -6,6 +6,7 @@ import dev.openfeature.contrib.providers.gofeatureflag.exception.InvalidOptions;
 import dev.openfeature.sdk.Client;
 import dev.openfeature.sdk.EvaluationContext;
 import dev.openfeature.sdk.FeatureProvider;
+import dev.openfeature.sdk.FlagEvaluationDetails;
 import dev.openfeature.sdk.ImmutableContext;
 import dev.openfeature.sdk.OpenFeatureAPI;
 import org.testcontainers.containers.GenericContainer;
@@ -82,8 +83,57 @@ import org.testcontainers.utility.MountableFile;
  * 4's review finding: {@code RateLimitedLoadDriver}'s worker threads call {@code Thread.interrupt()}
  * on shutdown, which cannot forcibly unblock a thread stuck inside a raw blocking socket read.
  * OkHttp's {@code callTimeout} enforces the deadline itself, independent of thread interruption, so a
- * hung relay-proxy request fails fast with an exception (counted as an error by
- * {@code RateLimitedLoadDriver}) instead of parking a worker thread for the rest of the run.
+ * hung relay-proxy request fails fast internally instead of parking a worker thread for the rest of
+ * the run. Whether that fast failure is actually visible to {@code RateLimitedLoadDriver} as a
+ * counted error is a separate question -- see the next section.
+ *
+ * <h2>Error-rate measurement: why the action calls {@code getBooleanDetails}, not {@code
+ * getBooleanValue}</h2>
+ *
+ * <p>{@code RateLimitedLoadDriver} only counts an evaluation as an error when the action
+ * {@code Runnable} throws a {@code RuntimeException} (see {@code RateLimitedLoadDriver.runWorker}).
+ * An earlier draft of this class called {@code client.getBooleanValue(FLAG_KEY, false, context)}
+ * directly as the action, which never throws on provider/timeout errors -- it silently returns the
+ * default value instead, so the error-rate column would always read ~0% even under total GOFF
+ * failure. Verified by decompiling {@code dev.openfeature.sdk.OpenFeatureClient} from the pinned
+ * {@code sdk-1.15.1.jar} with {@code javap -p -c}:
+ *
+ * <ul>
+ *   <li>{@code getBooleanValue(String, Boolean, EvaluationContext)} bytecode is just an
+ *       {@code invokevirtual} of {@code getBooleanDetails(...)} followed by a checkcast/unbox --
+ *       {@code getBooleanValue} has no error handling of its own; it fully delegates to
+ *       {@code getBooleanDetails}.</li>
+ *   <li>{@code getBooleanDetails(...)} delegates in turn to the private {@code evaluateFlag(...)},
+ *       whose {@code Exception table} entry {@code (34, 290) -> 309, Class java/lang/Exception} shows
+ *       it catches every {@code Exception} thrown during provider evaluation (network errors,
+ *       {@code ProviderNotReadyError}, OkHttp {@code callTimeout} failures, etc.) rather than letting
+ *       any of them propagate.</li>
+ *   <li>The catch handler (bytecode offsets 309-392) sets an {@code ErrorCode} on the
+ *       {@code FlagEvaluationDetails} it is building -- {@code ErrorCode.GENERAL} for a plain
+ *       exception, or the specific code from {@code OpenFeatureError.getErrorCode()} when the
+ *       exception is one of those -- sets an error message, then calls the private
+ *       {@code enrichDetailsWithErrorDefaults(T, FlagEvaluationDetails)} helper. That helper's own
+ *       bytecode is just {@code setValue(defaultValue)} followed by
+ *       {@code setReason(Reason.ERROR.toString())} -- i.e. it fills in the default value and marks
+ *       the reason as {@code "ERROR"}, it does not throw. {@code evaluateFlag} then returns this
+ *       enriched, non-null {@code FlagEvaluationDetails} object normally ({@code areturn} at offset
+ *       432) -- no exception ever leaves {@code evaluateFlag}, {@code getBooleanDetails}, or
+ *       {@code getBooleanValue}.</li>
+ * </ul>
+ *
+ * <p>Net effect: {@code getBooleanValue} cannot be made to throw by any provider-side failure, so it
+ * structurally cannot drive {@code RateLimitedLoadDriver}'s error counter. This class's action
+ * therefore calls {@link Client#getBooleanDetails(String, Boolean, EvaluationContext)} instead and
+ * inspects the returned {@link FlagEvaluationDetails#getErrorCode()}: per the decompilation above,
+ * that field is {@code null} on a normal evaluation and non-null ({@code ErrorCode.GENERAL} or a more
+ * specific code) whenever {@code evaluateFlag} swallowed an exception internally. When it is
+ * non-null, the action throws a {@code RuntimeException} itself, which is exactly what
+ * {@code RateLimitedLoadDriver.runWorker}'s existing {@code catch (RuntimeException)} is already
+ * watching for -- restoring the "a hung/failed request is counted as an error" property the class
+ * javadoc claimed but that {@code getBooleanValue} could never actually deliver. This uses only core
+ * {@code dev.openfeature:sdk} API ({@code getBooleanDetails}, {@code FlagEvaluationDetails}) already
+ * on this module's classpath -- it does not require the GOFF-provider-version bump documented above,
+ * which is a separate, unrelated gap ({@code IN_PROCESS} evaluation mode).
  */
 public final class GoffBenchmarkHarness {
 
@@ -92,6 +142,16 @@ public final class GoffBenchmarkHarness {
     private static final String FLAG_KEY = "benchmark-flag";
     private static final int RELAY_PROXY_PORT = 1031;
     private static final int REQUEST_TIMEOUT_MILLIS = 3_000;
+
+    /**
+     * Pinned relay-proxy server image tag. Verified as a real, current release via the
+     * {@code gofeatureflag/go-feature-flag} Docker Hub tag list and the
+     * {@code thomaspoignant/go-feature-flag} GitHub releases page (tagged {@code v1.55.0}, released
+     * 2026-07-02). Deliberately not {@code :latest} -- this harness exists to produce comparable
+     * latency numbers across runs, and {@code :latest} would let the server build silently drift
+     * between runs taken weeks apart.
+     */
+    private static final String RELAY_PROXY_IMAGE = "gofeatureflag/go-feature-flag:v1.55.0";
 
     public static void main(String[] args) {
         try (GenericContainer<?> relayProxy = startRelayProxy()) {
@@ -107,7 +167,7 @@ public final class GoffBenchmarkHarness {
     }
 
     private static GenericContainer<?> startRelayProxy() {
-        GenericContainer<?> container = new GenericContainer<>("gofeatureflag/go-feature-flag:latest")
+        GenericContainer<?> container = new GenericContainer<>(RELAY_PROXY_IMAGE)
                 .withExposedPorts(RELAY_PROXY_PORT)
                 .withCopyFileToContainer(
                         MountableFile.forClasspathResource("goff-proxy.yaml"), "/goff/goff-proxy.yaml")
@@ -128,8 +188,23 @@ public final class GoffBenchmarkHarness {
                     "relay-proxy @ " + rate + " req/s",
                     rate,
                     DURATION_SECONDS_PER_TIER,
-                    () -> client.getBooleanValue(FLAG_KEY, false, context));
+                    () -> evaluateOrThrow(client, context));
             System.out.println(result);
+        }
+    }
+
+    /**
+     * Evaluates the benchmark flag and throws a {@code RuntimeException} on provider/timeout error so
+     * that {@code RateLimitedLoadDriver}'s error counter actually fires. See the class javadoc's
+     * "Error-rate measurement" section for why this uses {@code getBooleanDetails} rather than
+     * {@code getBooleanValue}: the latter swallows all evaluation errors into a default-valued result
+     * and never throws, which would leave the error-rate metric permanently at ~0%.
+     */
+    private static void evaluateOrThrow(Client client, EvaluationContext context) {
+        FlagEvaluationDetails<Boolean> details = client.getBooleanDetails(FLAG_KEY, false, context);
+        if (details.getErrorCode() != null) {
+            throw new RuntimeException(
+                    "GOFF evaluation error: " + details.getErrorCode() + " (" + details.getErrorMessage() + ")");
         }
     }
 

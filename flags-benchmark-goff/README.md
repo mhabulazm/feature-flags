@@ -13,25 +13,31 @@ module's `pom.xml` (verified via `mvn -pl flags-benchmark-goff -am clean compile
 environment this was built in -- see `GoffBenchmarkHarness`'s class javadoc for exactly
 what was checked against the real jars). **Has never actually been run** -- running
 `GoffBenchmarkHarness.main()` needs a Docker daemon (for the Testcontainers-managed
-`gofeatureflag/go-feature-flag` relay-proxy), which wasn't available in that environment.
+`gofeatureflag/go-feature-flag:v1.55.0` relay-proxy), which wasn't available in that environment.
 Treat the numbers this produces as unverified until someone with Docker access runs it.
 
 ## What it does
 
-Runs a rate-limited load test against a real GOFF relay-proxy (started via Testcontainers)
-across four throughput tiers (100 / 1,000 / 10,000 / 50,000 req/s, 10 seconds each),
-reporting p50/p99/p999 added latency and error rate per tier.
+Runs a rate-limited load test against a real GOFF relay-proxy (started via Testcontainers,
+pinned to image tag `v1.55.0` rather than `:latest` so runs taken weeks apart are still
+comparable) across four throughput tiers (100 / 1,000 / 10,000 / 50,000 req/s, 10 seconds
+each), reporting p50/p99/p999 added latency and error rate per tier.
 
 Per the Slice B spec's Gate 1 gaps:
 - **No real peak req/s target exists in this repo.** The four tiers above are a sweep, not
   a guess at the real number -- read the real target off the curve at the ratification
   meeting instead of trusting a single pass/fail run.
+- **The driver's own worker count caps the top tiers.** `RateLimitedLoadDriver` uses a
+  closed-loop pool of 8 worker threads. Against network-latency-bound calls, 8 threads
+  cannot actually sustain the 10,000 or 50,000 req/s tiers -- at those tiers the reported
+  number reflects the driver's own saturation ceiling (however fast 8 threads can loop),
+  not a confirmed sustained rate at that tier.
 - **Gate 1 is NOT satisfied by this module as it stands.** Only relay-proxy/`REMOTE`-mode
   evidence is produced -- this is a known gap and a blocker for Slice B / Gate 1 sign-off,
   not a minor caveat and not a design choice. The design spec calls for embedded/library-mode
   (`IN_PROCESS`) evidence as Gate 1's *primary* requirement, with relay-proxy mode only as a
   secondary, separately-labelled run (relay-proxy mode is structurally a sidecar-shaped
-  network hop -- see `docs/feature-flags-research-gaps-v2.md` Thread 5 -- with a different
+  network hop -- see `../docs/feature-flags-research-gaps-v2.md` Thread 5 -- with a different
   cost profile). The relay-proxy numbers this harness produces satisfy only that secondary
   requirement; the primary (embedded-mode) evidence Gate 1 needs remains unproduced.
   This module's pinned GOFF provider version, `0.4.3`, has no embedded/`IN_PROCESS`
