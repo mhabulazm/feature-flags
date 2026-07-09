@@ -1,0 +1,7 @@
+flags:
+  benchmark-flag:
+    variations:
+      enabled: true
+      disabled: false
+    defaultVariation: disabled
+    rules: []
