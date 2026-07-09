@@ -74,6 +74,7 @@ One amendment for the new tooling: the B1 governance job and the B2 interaction 
 - **Facade ownership** — still open from ADR 0001: which team owns the library, its versioning, and the on-call rotation for the evaluation path (now also owns the B1 governance job).
 - **Interaction detection scope (B2)** — split into **ADR 0003 (draft)** (`0003-cross-service-flag-interaction-scan.md`), which decides it stays a build-time static scan (Tier 1) behind an escalation trigger to a runtime subsystem (Tier 2 → future ADR); confirm that scope at ratification.
 - **`InMemoryFlagEngine` + AWS Parameter Store path** (`feature-flags-facade-design.md` §4) — confirm overrides are cached, not read per-evaluation, so this bridge mode doesn't itself violate the B3 "no I/O on the hot path" property.
+- **See `../docs/feature-flags-v1-roadmap.md`** for how ratification and these follow-ups sequence against the rest of v1 (Slices A–E), including the open question of whether B1/B2 can ship ahead of the bundled `1.0.0` cut this ADR's Consequences section implies.
 
 ## References
 

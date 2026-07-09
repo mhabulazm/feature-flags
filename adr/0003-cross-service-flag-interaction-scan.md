@@ -67,6 +67,7 @@ Carry forward ADR 0002's guardrail unchanged: the scan is **read-only** over the
 - **Interaction heuristic precision** — the exact rule for "referenced in combination" (AST co-reference scope, how deep nesting is followed), and the acceptable false-positive rate for an advisory report.
 - **Graduation criteria** — whether Tier 1 ever moves from advisory to blocking for a subset of interactions (e.g. cross-service references to a `FAIL_CLOSED` flag), and the Tier-2 count threshold.
 - **Ownership** — the facade owner (still an open item in `0002-ratification-checklist.md`) runs this scan alongside the B1 stale-flag job.
+- **See `../docs/superpowers/specs/2026-07-09-flags-v1-slice-e-interaction-scan-design.md`** for a proposed Tier 1a/1b split (single-service scanning logic vs. cross-repo aggregation wiring) that makes part of this buildable before any consuming service exists to aggregate from, plus a concrete false-positive-rate expectation (~90%, per literature on a structurally similar scan) this ADR doesn't currently cite.
 
 ## References
 

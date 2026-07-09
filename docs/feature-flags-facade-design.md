@@ -283,6 +283,8 @@ class NoOpFlagEngineTest extends FlagEngineContractTest {
 
 This is the concrete payoff of designing the facade first: typed API, governance, and consistent failure-policy behavior land in every service now, and the eventual engine decision becomes a config change layered on top rather than a blocking dependency for starting the work.
 
+**Superseded by:** [`feature-flags-v1-roadmap.md`](feature-flags-v1-roadmap.md) — this plan predates ADR 0002 Part B's B1/B2/B3 scope additions; the roadmap sequences the full remaining v1 work (including B1/B2/B3) against its real blockers and links a detailed spec per slice.
+
 ---
 
 ## 9. Tech stack
