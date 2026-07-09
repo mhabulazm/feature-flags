@@ -45,4 +45,19 @@ class RateLimitedLoadDriverTest {
         assertThat(callCount.get()).isGreaterThan(0);
         assertThat(result.p50Nanos()).isGreaterThan(0);
     }
+
+    @Test
+    void run_respectsDurationDeadline_atLowTargetRate() {
+        // At targetRatePerSecond=1, intervalNanosPerWorker = 8s (WORKER_COUNT=8), so an
+        // unclamped per-iteration sleep can overshoot the 1s duration by up to ~8s. If the
+        // sleep is properly clamped to the remaining time until the deadline, run() should
+        // return close to the requested 1s, well under the ~9s the old unclamped behavior
+        // would produce.
+        long startNanos = System.nanoTime();
+        driver.run("low-rate", 1, 1, () -> {
+        });
+        long elapsedMillis = (System.nanoTime() - startNanos) / 1_000_000;
+
+        assertThat(elapsedMillis).isLessThan(3_000L);
+    }
 }

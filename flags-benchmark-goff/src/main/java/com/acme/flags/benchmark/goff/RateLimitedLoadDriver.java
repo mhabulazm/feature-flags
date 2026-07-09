@@ -29,12 +29,25 @@ public final class RateLimitedLoadDriver {
                 }
             });
         }
+        boolean completed = false;
         try {
-            latch.await(durationSeconds + 30L, TimeUnit.SECONDS);
+            completed = latch.await(durationSeconds + 30L, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } finally {
             pool.shutdownNow();
+        }
+
+        boolean terminated = false;
+        try {
+            terminated = pool.awaitTermination(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        if (!completed || !terminated) {
+            System.err.println("RateLimitedLoadDriver: workers did not complete cleanly within the grace "
+                    + "period for '" + label + "' -- results may be incomplete");
         }
 
         long[] latenciesArray = latenciesNanos.stream().mapToLong(Long::longValue).toArray();
@@ -43,7 +56,7 @@ public final class RateLimitedLoadDriver {
 
     private void runWorker(Runnable action, long endAtNanos, long intervalNanos,
             ConcurrentLinkedQueue<Long> latenciesNanos, AtomicLong errorCount) {
-        while (System.nanoTime() < endAtNanos) {
+        while (!Thread.currentThread().isInterrupted() && System.nanoTime() < endAtNanos) {
             long callStart = System.nanoTime();
             try {
                 action.run();
@@ -54,8 +67,10 @@ public final class RateLimitedLoadDriver {
             latenciesNanos.add(elapsed);
 
             long sleepNanos = intervalNanos - elapsed;
-            if (sleepNanos > 0) {
-                LockSupport.parkNanos(sleepNanos);
+            long remainingUntilDeadline = endAtNanos - System.nanoTime();
+            long actualSleepNanos = Math.min(sleepNanos, remainingUntilDeadline);
+            if (actualSleepNanos > 0) {
+                LockSupport.parkNanos(actualSleepNanos);
             }
         }
     }
