@@ -47,6 +47,8 @@ flowchart TB
 
 *All modules depend only on `flags-api`; vendor SDKs never reach it. An ArchUnit test fails the build if `flags-api`/`flags-spi` imports an Unleash or GOFF package.*
 
+*Update: `flags-engine-goff`'s module shell already shipped on `main` as an inert pre-ratification skeleton — see `feature-flags-facade-design.md`'s module-layout section for the detail. "Ships after ADR 0002" here means the functioning adapter, not the module's existence.*
+
 ---
 
 ## Core interfaces

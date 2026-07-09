@@ -7,8 +7,8 @@ OpenFeature / GO Feature Flag (GOFF) implementation of the `flags-api` `FlagEngi
 *Proposed (draft)* and blocks implementation start until it is ratified (see the
 [ratification checklist](../adr/0002-ratification-checklist.md)). This module exists so the adapter's
 shape, its place in the reactor, and its conformance gate are ready the moment the engine is
-ratified — it does **not** evaluate flags yet. It lives on the `spike/flags-engine-goff` branch until
-then.
+ratified — it does **not** evaluate flags yet. It ships on `main` today as this inert skeleton
+(merged via #1); only the real evaluation logic below still waits on ratification.
 
 ## What's here
 - `GoffFlagEngine` — implements `FlagEngine`; both methods throw `UnsupportedOperationException`.
@@ -32,5 +32,4 @@ engine choice ahead of ratification.
    `@Bean @ConditionalOnProperty(name = "flags.engine", havingValue = "goff")` method to
    `FlagsAutoConfiguration` (this adds a `flags-engine-goff` dependency to
    `flags-spring-boot-starter`).
-5. Add `flags-engine-goff` to `flags-bom`'s dependency management, and merge the branch once
-   ADR 0002 is *Accepted*.
+5. Add `flags-engine-goff` to `flags-bom`'s dependency management once ADR 0002 is *Accepted*.

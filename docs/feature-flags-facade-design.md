@@ -31,6 +31,8 @@ These carry forward from ADR 0001 and the facade sketch's guardrails, made expli
 
 The first five modules are fully buildable, testable, and consumable by services today. This is the mechanism by which "design the facade before the engine" actually works as an engineering strategy, not just a planning exercise.
 
+**Update:** `flags-engine-goff`'s module shell — POM entry, package structure, and an inert `GoffFlagEngine` that throws `UnsupportedOperationException` — already shipped on `main` ahead of ADR 0002, as a pre-ratification spike (see `flags-engine-goff/README.md`). The "After ADR 0002" ship date above refers to the *functioning* adapter (real OpenFeature/GOFF SDK wiring, vendor dependencies uncommented), not the module's existence.
+
 ---
 
 ## 3. Core interfaces
