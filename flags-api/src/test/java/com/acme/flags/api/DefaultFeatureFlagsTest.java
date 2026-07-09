@@ -102,6 +102,15 @@ class DefaultFeatureFlagsTest {
                 .hasMessage("adapter bug");
     }
 
+    @Test
+    void getVariant_propagatesException_whenEngineThrowsNonTransportError() {
+        engine.throwOnEvaluate(new IllegalStateException("adapter bug"));
+
+        assertThatThrownBy(() -> flags.getVariant(BOOL_FLAG, String.class, "fallback", FlagContext.anonymous()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("adapter bug");
+    }
+
     private record TestFlagKey(String key, FlagMetadata metadata) implements FlagKey {
     }
 }

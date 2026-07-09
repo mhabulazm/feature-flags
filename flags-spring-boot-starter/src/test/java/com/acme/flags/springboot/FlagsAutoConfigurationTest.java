@@ -10,6 +10,7 @@ import com.acme.flags.noop.NoOpFlagEngine;
 import com.acme.flags.spi.FlagEngine;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -58,8 +59,13 @@ class FlagsAutoConfigurationTest {
                 .withConfiguration(AutoConfigurations.of(FlagsAutoConfiguration.class))
                 .run(context -> {
                     assertThat(context).hasSingleBean(FilterRegistrationBean.class);
-                    Object filter = context.getBean(FilterRegistrationBean.class).getFilter();
-                    assertThat(filter).isInstanceOf(FlagContextFilter.class);
+                    FilterRegistrationBean<?> registration = context.getBean(FilterRegistrationBean.class);
+                    assertThat(registration.getFilter()).isInstanceOf(FlagContextFilter.class);
+                    assertThat(registration.getOrder()).isEqualTo(SecurityProperties.DEFAULT_FILTER_ORDER + 1);
+
+                    assertThat(context).hasSingleBean(FlagContextResolver.class);
+                    assertThat(context.getBean(FlagContextResolver.class).resolve())
+                            .isEqualTo(FlagContext.anonymous());
                 });
     }
 }

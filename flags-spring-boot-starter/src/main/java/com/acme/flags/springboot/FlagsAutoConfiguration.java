@@ -14,10 +14,10 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.Ordered;
 
 @AutoConfiguration
 @EnableConfigurationProperties(FlagOverridesProperties.class)
@@ -60,7 +60,7 @@ public class FlagsAutoConfiguration {
     public FilterRegistrationBean<FlagContextFilter> flagContextFilterRegistration(FlagContextResolver resolver) {
         FilterRegistrationBean<FlagContextFilter> registration =
                 new FilterRegistrationBean<>(new FlagContextFilter(resolver));
-        registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        registration.setOrder(SecurityProperties.DEFAULT_FILTER_ORDER + 1);
         return registration;
     }
 }
