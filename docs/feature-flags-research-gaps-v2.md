@@ -60,6 +60,18 @@ This is the one thread with a concrete code artifact to check against: `flags-ap
 
 ---
 
+## 5. Facade / anti-corruption-layer pattern validity
+
+ADR 0001 chose an in-process facade library over calling a vendor SDK directly or building a full in-house system. This thread checks whether the literature still supports an in-process facade specifically, versus an out-of-process alternative (e.g. a sidecar/relay-proxy, which GOFF itself supports as a deployment mode per `feature-flags-comparison.md`).
+
+**Validates** — [IAnticorruption: a domain-driven design approach to more robust integration](https://consensus.app/papers/details/fc93716760855ced8b6d004953905dc5/?utm_source=claude_desktop) [30] is a real industrial case study of the exact pattern the facade implements: an anti-corruption layer isolating a domain layer from a legacy/external system's model, so the domain never has to know the external system exists. The reported result — integration overhead for adding new external systems dropped from 30% to 10% of total development effort once the ACL was in place — is direct, quantified support for `FeatureFlags`/`FlagEngine`'s whole reason to exist: application code (`CheckoutService`, etc.) never imports Unleash or GOFF, so a vendor swap costs a config flip plus one adapter class rather than a rewrite (exactly the mechanic `feature-flags-use-cases.md`'s in-house-facade Use Case 3 demonstrates).
+
+**Validates, with a quantified counter-cost** — [Dissecting Overheads of Service Mesh Sidecars](https://consensus.app/papers/details/b6ad9a312cb150f48f121047d8e746d1/?utm_source=claude_desktop) [31] measured sidecar-proxy overhead directly: up to 269% higher latency and up to 163% more vCPU versus in-process handling, driven by IPC and protocol-parsing costs that don't exist when the same logic runs in the calling process. This is strong evidence that ADR 0001's in-process facade choice — not a sidecar/relay-proxy in front of every service — is the right shape for a per-request hot-path check, corroborating why Unleash and GOFF's own in-process/embedded SDK modes are what score Tier 1 in `feature-flags-comparison.md`.
+
+**Gap** — [31]'s numbers apply directly to a mode the project's own docs already contemplate without flagging the cost: GOFF's relay-proxy deployment (`feature-flags-comparison.md`, `feature-flags-use-cases.md` Use Case 2 — "Shared relay proxy for low-latency in-VPC evaluation") is structurally a sidecar-shaped network hop per evaluation, not embedded/library mode. The use-case doc rates the production impact of a relay-proxy outage as "Medium if run as a single instance," but neither doc quantifies the *always-on* latency/CPU tax of choosing relay-proxy mode over embedded mode in the first place — [31]'s up-to-269%-latency finding suggests that tax is not automatically negligible just because GOFF is "Tier 1" in the embedded case. Before adopting relay-proxy mode for any polyglot or multi-tenant reason, it should be benchmarked against embedded mode, not assumed equivalent.
+
+---
+
 ## References
 
 18. [Using open standards for interoperability issues, solutions, and challenges facing cloud computing](https://consensus.app/papers/details/d87b2cfafead57988e10ba8a963ce21b/?utm_source=claude_desktop) (Harsh et al., 2012, 2012 8th International Conference on Network and Service Management, 40 citations)
@@ -74,3 +86,5 @@ This is the one thread with a concrete code artifact to check against: `flags-ap
 27. [Context Object: A Design Pattern for Efficient Information Sharing across Multiple System Layers](https://consensus.app/papers/details/ab095a831b065c92995f1a99d9c5bfb3/?utm_source=claude_desktop) (Krishna et al., 2005, Unknown Journal, 1 citation)
 28. [Service-Level Objective-Aware Load-Adaptive Timeout: Balancing Failure Rate and Latency in Microservices Communication](https://consensus.app/papers/details/353cc59f4a695eb3a5e8845ebf7585a8/?utm_source=claude_desktop) (Hanada et al., 2025, IEEE Access, 2 citations)
 29. [A declarative approach and benchmark tool for controlled evaluation of microservice resiliency patterns](https://consensus.app/papers/details/cd39b2aef4695458a2f173120fcfe62e/?utm_source=claude_desktop) (Aderaldo et al., 2024, Software: Practice and Experience, 1 citation)
+30. [IAnticorruption: a domain-driven design approach to more robust integration](https://consensus.app/papers/details/fc93716760855ced8b6d004953905dc5/?utm_source=claude_desktop) (Peng et al., 2007, Unknown Journal, 2 citations)
+31. [Dissecting Overheads of Service Mesh Sidecars](https://consensus.app/papers/details/b6ad9a312cb150f48f121047d8e746d1/?utm_source=claude_desktop) (Zhu et al., 2023, Proceedings of the 2023 ACM Symposium on Cloud Computing, 44 citations)
