@@ -1,16 +1,21 @@
 package com.acme.flags.api;
 
 import com.acme.flags.spi.FlagEngine;
+import com.acme.flags.spi.FlagEngineUnavailableException;
 import java.util.Map;
 
 final class MockFlagEngine implements FlagEngine {
 
-    private boolean throwOnEvaluate = false;
+    private RuntimeException exceptionToThrow;
     private Boolean fixedBooleanResult;
     private Object fixedVariantResult;
 
     void throwOnEvaluate() {
-        this.throwOnEvaluate = true;
+        this.exceptionToThrow = new FlagEngineUnavailableException("engine unreachable");
+    }
+
+    void throwOnEvaluate(RuntimeException exception) {
+        this.exceptionToThrow = exception;
     }
 
     void returnBoolean(boolean value) {
@@ -23,8 +28,8 @@ final class MockFlagEngine implements FlagEngine {
 
     @Override
     public boolean evaluateBoolean(String key, Map<String, String> context, boolean defaultValue) {
-        if (throwOnEvaluate) {
-            throw new RuntimeException("engine unreachable");
+        if (exceptionToThrow != null) {
+            throw exceptionToThrow;
         }
         return fixedBooleanResult != null ? fixedBooleanResult : defaultValue;
     }
@@ -32,8 +37,8 @@ final class MockFlagEngine implements FlagEngine {
     @Override
     @SuppressWarnings("unchecked")
     public <T> T evaluateVariant(String key, Map<String, String> context, Class<T> type, T defaultValue) {
-        if (throwOnEvaluate) {
-            throw new RuntimeException("engine unreachable");
+        if (exceptionToThrow != null) {
+            throw exceptionToThrow;
         }
         return fixedVariantResult != null ? (T) fixedVariantResult : defaultValue;
     }
