@@ -59,7 +59,7 @@ A PR that adds any of the above to the facade should be treated as a signal to s
 ## Follow-ups / open questions
 
 - **Engine selection (Unleash vs. GO Feature Flag).** Both score identically on performance/setup/scalability; the decision is maturity + richer admin UI (Unleash) vs. minimal ops footprint (GOFF) — see `../docs/feature-flags-comparison.md` for the tiebreak reasoning. Needs a follow-up ADR before implementation starts.
-- **Facade ownership.** Which team owns the shared library, its versioning policy, and the on-call rotation for the flag-evaluation path.
+- **Facade ownership.** ~~Which team owns the shared library, its versioning policy, and the on-call rotation for the flag-evaluation path.~~ **Consciously waived for the sandbox (2026-07-10)** — a single-committer sandbox has no team to assign. An *intended owner profile* (library + SPI, versioning, evaluation-path on-call, plus the Slice D/E governance jobs) is recorded in `0002-ratification-checklist.md`; it converts to a real assignment when the project reaches a live org context or first go-live. Deliberately separate from the Rollout-plan follow-up below (the first integrator is not the default owner).
 - **Rollout plan.** Which service integrates first, and how the `Feature` registry and `FailurePolicy` defaults get reviewed before go-live.
 
 ## References

@@ -33,7 +33,7 @@ Five deliverable slices remain (A–E below); each has its own detailed spec und
 | — | **Ratification itself** (human decision) | Not started | Slice B's evidence + the non-code blockers in §4 | — (not a code slice) |
 | C | Complete `flags-engine-goff` adapter, cut `1.0.0` | Blocked | Ratification, and specifically GOFF being the chosen engine | `2026-07-09-flags-v1-slice-c-goff-adapter-design.md` |
 | D | B1 — stale-flag governance job + CI metadata gate | Blocked | ADR 0002 Accepted | `2026-07-09-flags-v1-slice-d-stale-flag-governance-design.md` |
-| E | B2 / ADR 0003 Tier 1 — interaction scan | Blocked | ADR 0003 Accepted (folded into ADR 0002's own sign-off, not a separate gate) | `2026-07-09-flags-v1-slice-e-interaction-scan-design.md` |
+| E | B2 / ADR 0003 Tier 1 — interaction scan | Ready now (Tier 1a; Tier 1b needs real consumers) | ADR 0003 now **Accepted** (2026-07-10) | `2026-07-09-flags-v1-slice-e-interaction-scan-design.md` |
 
 Slices A and B have no dependency on each other or on ratification — both can start immediately and run in parallel.
 
@@ -56,7 +56,7 @@ Whoever owns Slice C/D/E's actual scheduling needs to answer this before sequenc
 
 These gate ratification (and therefore Slices C/D/E) but have no home in any of the five code slices — they're organizational decisions, not engineering work:
 
-- **Facade ownership assignment** — which team owns the `flags-*` library, its versioning policy, and the on-call rotation for the evaluation path. Open since ADR 0001; the ratification checklist's non-engine blockers restate it, and B1's governance job (Slice D) will ride on whoever this ends up being.
+- **Facade ownership assignment** — which team owns the `flags-*` library, its versioning policy, and the on-call rotation for the evaluation path. **Consciously waived for the sandbox (2026-07-10)** with a recorded intended-owner profile (see `../adr/0002-ratification-checklist.md`); converts to a real assignment at first go-live. B1's governance job (Slice D) and the Slice E scan ride on that eventual owner.
 - **ADR 0001's still-open rollout-plan follow-ups** — which service integrates first, and how the per-service `Feature`/`FlagKey` registry and `FailurePolicy` defaults get reviewed before go-live. Named in ADR 0001's own Follow-ups section, separate from the ownership question, and not restated anywhere else.
 
 Neither of these has a spec file. They need a decision-maker, not a design.
@@ -68,7 +68,7 @@ Neither of these has a spec file. They need a decision-maker, not a design.
 `docs/feature-flags-research-gaps-v2.md`'s own Recommended Actions table names concrete doc edits that were identified but never applied. Tracked here so they aren't lost, not auto-applied as part of this roadmap (they touch ADR text, which deserves its own review rather than a side effect of writing a roadmap):
 
 - **Thread 1** — reword ADR 0002 Part A's "a future third engine that is also OpenFeature-compliant needs no new adapter at all, only a configuration change" to something closer to "adapter code shrinks, not disappears," per source [19]'s finding that open-standard compliance doesn't guarantee full cross-vendor interoperability without the destination vendor's own investment in it.
-- **Thread 3** — add the ~90%-false-positive expectation (source [24]) and the "Tier 1.5" similarity-based triage follow-up (source [25]) to ADR 0003's "Follow-ups / open questions" section. (Slice E's spec restates these so the gap doesn't block Slice E's own work, but the ADR itself still doesn't have them.)
+- **Thread 3** — ~~add the ~90%-false-positive expectation (source [24]) and the "Tier 1.5" similarity-based triage follow-up (source [25]) to ADR 0003's "Follow-ups / open questions" section.~~ **Done (2026-07-10)** — both folded into ADR 0003's heuristic-precision follow-up at ratification.
 - **Thread 5** — add a relay-proxy latency-benchmark action item to ADR 0002 or 0003's follow-ups, given source [31]'s sidecar-overhead findings (up to 269% higher latency) apply directly to GOFF's relay-proxy deployment mode, which `feature-flags-comparison.md`/`feature-flags-use-cases.md` recommend without quantifying that cost.
 
 ---

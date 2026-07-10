@@ -1,10 +1,10 @@
 # ADR 0003: Cross-Service Flag Interaction Visibility via a Build-Time Static Scan
 
-> **Draft — notes toward a decision.** Not accepted. This ADR takes up the scope-check ADR 0002 Part B (B2) deferred to it: whether cross-service flag-interaction visibility stays a scan or becomes its own subsystem. It needs team ratification before moving to *Accepted*, and resolves the B2 interaction-scan-scope blocker in `0002-ratification-checklist.md`. Citation markers `[n]` refer to the numbered list in `../docs/feature-flags-research-references.md`.
+> **Accepted (2026-07-10).** This ADR took up the scope-check ADR 0002 Part B (B2) deferred to it — whether cross-service flag-interaction visibility stays a scan or becomes its own subsystem — and resolves it as a build-time static **advisory** scan (Tier 1), with the heavier runtime subsystem deferred behind an explicit trigger (Tier 2 → ADR 0004). Ratified in the sandbox as a scope/architecture decision (no separate team sign-off exists at this project stage); this discharges the B2 interaction-scan-scope blocker in `0002-ratification-checklist.md`. Citation markers `[n]` refer to the numbered list in `../docs/feature-flags-research-references.md`.
 
 ## Status
 
-Proposed (draft). Implements and bounds ADR 0002 Part B item **B2** (cross-service interaction visibility). Does not block ADR 0002 Part A (engine selection); it discharges the separate B2-scope blocker the ratification checklist lists before ADR 0002 is *Accepted*.
+Accepted (2026-07-10). Implements and bounds ADR 0002 Part B item **B2** (cross-service interaction visibility). Ratified scope: a build-time static **advisory** scan (Tier 1); the runtime subsystem (Tier 2) stays deferred behind the escalation trigger below (→ future ADR 0004). The cross-repo aggregation mechanism and the Tier-2 count threshold are consciously deferred to first real-consumer integration (see Follow-ups) — they do not block this scope decision. Does not by itself resolve ADR 0002 Part A (engine selection); it discharges the separate B2-scope blocker the ratification checklist lists before ADR 0002 is *Accepted*.
 
 ## Context
 
@@ -63,11 +63,13 @@ Carry forward ADR 0002's guardrail unchanged: the scan is **read-only** over the
 
 ## Follow-ups / open questions
 
-- **Cross-repo aggregation mechanism** — how a fleet-level scan discovers and reads every service's `FlagKey` registry (monorepo view, a published registry artifact per service, or a CI aggregation step). Decide before implementation.
-- **Interaction heuristic precision** — the exact rule for "referenced in combination" (AST co-reference scope, how deep nesting is followed), and the acceptable false-positive rate for an advisory report.
-- **Graduation criteria** — whether Tier 1 ever moves from advisory to blocking for a subset of interactions (e.g. cross-service references to a `FAIL_CLOSED` flag), and the Tier-2 count threshold.
-- **Ownership** — the facade owner (still an open item in `0002-ratification-checklist.md`) runs this scan alongside the B1 stale-flag job.
-- **See `../docs/superpowers/specs/2026-07-09-flags-v1-slice-e-interaction-scan-design.md`** for a proposed Tier 1a/1b split (single-service scanning logic vs. cross-repo aggregation wiring) that makes part of this buildable before any consuming service exists to aggregate from, plus a concrete false-positive-rate expectation (~90%, per literature on a structurally similar scan) this ADR doesn't currently cite.
+Ratification (2026-07-10) accepted the Tier-1 scope and the read-only/advisory contract. The items below are the sub-questions consciously deferred at that ratification — they do not block the scope decision.
+
+- **Cross-repo aggregation mechanism** — how a fleet-level scan discovers and reads every service's `FlagKey` registry (monorepo view, a published registry artifact per service, or a CI aggregation step). **Deferred to implementation / first real-consumer integration** — no second service repo exists to aggregate from yet. Slice E's spec splits this into Tier 1a (single-service scanning logic, buildable now) vs. Tier 1b (cross-repo aggregation wiring, needs real consumers).
+- **Interaction heuristic precision** — the exact rule for "referenced in combination" (AST co-reference scope, how deep nesting is followed), and the acceptable false-positive rate for an advisory report. Expect a **high false-positive rate (~90%, per literature on a structurally similar scan [24])** — advisory-only output keeps each false positive cheap (a review note, not a blocked merge). A follow-up **"Tier 1.5" similarity-based triage [25]** (rank/cluster candidate interactions to cut the review load) is the natural next step if the raw report proves too noisy; it stays advisory and does **not** graduate to Tier 2. (Both figures carried in from Slice E's spec, closing the `feature-flags-research-gaps-v2.md` Thread 3 housekeeping item.)
+- **Graduation criteria** — whether Tier 1 ever moves from advisory to blocking for a subset of interactions (e.g. cross-service references to a `FAIL_CLOSED` flag), and the **Tier-2 count threshold**. **Threshold left TBD until first real-consumer integration** — no real flag volume exists to calibrate a meaningful number in the sandbox, and a placeholder would be fiction. Set it once real interaction counts exist.
+- **Ownership** — the facade owner runs this scan alongside the B1 stale-flag job. Ownership is **consciously waived for the sandbox** with a recorded intended-owner profile (which explicitly includes this scan) — see `0002-ratification-checklist.md`.
+- **See `../docs/superpowers/specs/2026-07-09-flags-v1-slice-e-interaction-scan-design.md`** for the proposed Tier 1a/1b split and the source of the ~90% false-positive-rate expectation now folded into the heuristic-precision item above.
 
 ## References
 
