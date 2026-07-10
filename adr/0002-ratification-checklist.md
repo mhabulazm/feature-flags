@@ -43,10 +43,10 @@ Part A flags GOFF's admin UI as thin: its flags-as-config model is GitOps-friend
 - Either: a non-engineer (PM/ops) can **create and flip a flag without a code deploy** through an accepted workflow (GOFF admin UI, or a self-serve layer we accept the cost of building); **or** the team explicitly accepts **flags-as-config via GitOps** (PR-per-change) as sufficient self-serve for the foreseeable roadmap.
 
 **Evidence to gather:**
-- [ ] A spike exercising GOFF's admin UI against one real "PM toggles a flag" task, versus the same task via the flags-as-config workflow.
-- [ ] An explicit statement of who needs to change flags without engineering involvement, and how often — the actual requirement this gate is testing.
+- [ ] A spike exercising GOFF's admin UI against one real "PM toggles a flag" task, versus the same task via the flags-as-config workflow. — *Not run: no live GOFF UI and no non-engineer to recruit in the sandbox. Deferred to the mandatory re-run trigger at first real-consumer onboarding (see the Gate 2 runbook).*
+- [x] An explicit statement of who needs to change flags without engineering involvement, and how often — the actual requirement this gate is testing. — *Recorded truthfully in the Gate 2 runbook: no non-engineer consumer exists yet (single-committer sandbox); real demand is unknown until a product team adopts the facade.*
 
-**Result:** ☐ PASS  ☐ FAIL
+**Result:** ☑ **PASS (provisional) — via path (b), 2026-07-10.** The team explicitly accepts flags-as-config / GitOps (PR-per-change) as sufficient self-serve, given no non-engineer consumer exists yet and the design is GitOps-native. Provisional because the usability spike was **not** run; the mandatory re-run at first real-consumer onboarding (Gate 2 runbook) can still flip this to FAIL → Unleash.
 **If FAIL → adopt Unleash** (first-class self-serve is the hard requirement here).
 
 ---
@@ -71,7 +71,7 @@ These are open items from ADR 0001/0002 that gate implementation start; the engi
 
   **Intended owner profile** — a platform/infra-style team, neutral across consuming services, that can carry all five as one charter (or records the split at assignment time): (1) the `flags-*` library + `FlagEngine`/`FlagContextResolver` SPI + public API surface; (2) versioning / SemVer discipline (breaking changes have fleet-wide blast radius — ADR 0001 Consequences); (3) on-call for the runtime evaluation hot path; (4) the B1 stale-flag governance job (Slice D); (5) the cross-service interaction scan (Slice E, ADR 0003 Tier 1).
 - [x] **B2 interaction-scan scope confirmed (2026-07-10).** Ratified **ADR 0003** (`0003-cross-service-flag-interaction-scan.md`) → *Accepted*: interaction visibility is a build-time static **advisory** scan (Tier 1) with a defined escalation trigger to a runtime subsystem (Tier 2 → future ADR 0004). Tier-1 scope and read-only/advisory contract confirmed; the cross-repo aggregation mechanism and the Tier-2 count threshold are deferred to first real-consumer integration.
-- [ ] **InMemoryFlagEngine + AWS Parameter Store path confirmed cached.** Verify overrides are cached, not read per-evaluation, so the bridge mode does not itself violate B3's "no I/O on the hot path" property (`../docs/feature-flags-facade-design.md` §4).
+- [x] **InMemoryFlagEngine + AWS Parameter Store path confirmed cached (Blocker 2 Path A).** Verified: overrides bind once at startup and evaluation is a plain `Map.get()` — no per-evaluation I/O, so the bridge mode does not violate B3's "no I/O on the hot path" property (`../docs/feature-flags-facade-design.md` §4). Evidence: `InMemoryFlagEngineNoHotPathIoTest` + the structural argument in `../BLOCKER_2_RESOLUTION.md`. Path B (LocalStack real-AWS test) is now unblocked by ADR 0003 acceptance but optional — Path A already satisfies this blocker.
 
 ---
 
@@ -81,8 +81,8 @@ These are open items from ADR 0001/0002 that gate implementation start; the engi
 |---|---|
 | Engine ratified | ☐ GO Feature Flag (chosen, pending evidence confirmation)   ☐ Unleash (fallback if Gates 1/2 fail) |
 | Gate 1 (peak-load) | ☐ PASS  ☐ FAIL |
-| Gate 2 (self-serve) | ☐ PASS  ☐ FAIL |
-| Non-engine blockers all checked/waived | ☐ Yes |
+| Gate 2 (self-serve) | ☑ PASS (provisional — path (b), GitOps accepted; re-run at first real-consumer)  ☐ FAIL |
+| Non-engine blockers all checked/waived | ☑ Yes (ownership waived; B2 confirmed; Parameter Store confirmed) |
 | Ratified by | __________________________ |
 | Date | __________________________ |
 
