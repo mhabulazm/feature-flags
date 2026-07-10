@@ -4,7 +4,7 @@
 
 ## Status
 
-Proposed (draft). Supersedes parts of ADR 0001's governance and guardrail sections as noted in Part B. Blocks implementation start until Part A is ratified.
+Proposed (draft). Supersedes parts of ADR 0001's governance and guardrail sections as noted in Part B. Blocks implementation start until ratified. Ratification is gated by the checklist in `0002-ratification-checklist.md` — complete both engine gates and the non-engine blockers there before changing this Status to *Accepted*.
 
 ## Context
 
@@ -72,13 +72,15 @@ One amendment for the new tooling: the B1 governance job and the B2 interaction 
 
 - **Ratify the engine (GOFF recommended).** The one item needing human sign-off before *Accepted* — decide against our real peak load and self-serve requirements, per Part A's flip conditions.
 - **Facade ownership** — still open from ADR 0001: which team owns the library, its versioning, and the on-call rotation for the evaluation path (now also owns the B1 governance job).
-- **Interaction detection scope (B2)** — confirm whether it stays a build-time scan or warrants ADR 0003.
+- **Interaction detection scope (B2)** — split into **ADR 0003 (draft)** (`0003-cross-service-flag-interaction-scan.md`), which decides it stays a build-time static scan (Tier 1) behind an escalation trigger to a runtime subsystem (Tier 2 → future ADR); confirm that scope at ratification.
 - **`InMemoryFlagEngine` + AWS Parameter Store path** (`feature-flags-facade-design.md` §4) — confirm overrides are cached, not read per-evaluation, so this bridge mode doesn't itself violate the B3 "no I/O on the hot path" property.
+- **See `../docs/feature-flags-v1-roadmap.md`** for how ratification and these follow-ups sequence against the rest of v1 (Slices A–E), including the open question of whether B1/B2 can ship ahead of the bundled `1.0.0` cut this ADR's Consequences section implies.
 
 ## References
 
 - `0001-adopt-in-house-facade-alongside-flag-engine.md` — the decision this evolves
 - `../docs/feature-flags-research-references.md` — the 17 numbered sources and their mapping to each artifact
+- `../docs/feature-flags-research-gaps-v2.md` — follow-up research pass on gaps/alternatives/enhancements, including a live code-review finding on `FlagContext.current()` (Thread 4) and `DefaultFeatureFlags`'s exception handling (Thread 6)
 - `../docs/feature-flags-facade-design.md` — §5 (registries), §6 (governance), §4 (bridge engines) amended by Part B
 - `../docs/feature-flags-facade-sketch.md` — §3/§5 (context resolution, failure policy) amended by B3
 - `../docs/feature-flags-comparison.md`, `../docs/feature-flags-use-cases.md` — the "facade tax" framing (B4) and the "no I/O" claim (B3)

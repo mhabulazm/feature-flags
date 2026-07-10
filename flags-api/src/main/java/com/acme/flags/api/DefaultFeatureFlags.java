@@ -1,6 +1,7 @@
 package com.acme.flags.api;
 
 import com.acme.flags.spi.FlagEngine;
+import com.acme.flags.spi.FlagEngineUnavailableException;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +25,7 @@ public final class DefaultFeatureFlags implements FeatureFlags {
         boolean fallback = false;
         try {
             result = engine.evaluateBoolean(flag.key(), context.toMap(), defaultValue);
-        } catch (RuntimeException e) {
+        } catch (FlagEngineUnavailableException e) {
             result = defaultValue;
             fallback = true;
             log.warn("Flag engine unavailable, falling back to default value for {}", flag.key(), e);
@@ -39,7 +40,7 @@ public final class DefaultFeatureFlags implements FeatureFlags {
         boolean fallback = false;
         try {
             result = engine.evaluateVariant(flag.key(), context.toMap(), type, defaultValue);
-        } catch (RuntimeException e) {
+        } catch (FlagEngineUnavailableException e) {
             result = defaultValue;
             fallback = true;
             log.warn("Flag engine unavailable, falling back to default value for {}", flag.key(), e);

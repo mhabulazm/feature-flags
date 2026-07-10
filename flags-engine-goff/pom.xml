@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.acme.flags</groupId>
+        <artifactId>flags-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>flags-engine-goff</artifactId>
+    <packaging>jar</packaging>
+    <name>Flags GO Feature Flag Engine (skeleton)</name>
+    <description>Pre-ratification skeleton of the OpenFeature/GO Feature Flag FlagEngine adapter. Not wired until ADR 0002 is ratified.</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.acme.flags</groupId>
+            <artifactId>flags-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!--
+          Real engine dependencies, added on ADR 0002 ratification (GOFF selected).
+          Coordinates/versions to confirm at that point:
+
+            <dependency>
+                <groupId>dev.openfeature</groupId>
+                <artifactId>sdk</artifactId>
+                <version>${openfeature-sdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.openfeature.contrib.providers</groupId>
+                <artifactId>go-feature-flag</artifactId>
+                <version>${goff-provider.version}</version>
+            </dependency>
+
+          Until then this module carries no external engine dependency, so the reactor
+          build commits to no engine choice ahead of ratification.
+        -->
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.acme.flags</groupId>
+            <artifactId>flags-contract-test</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

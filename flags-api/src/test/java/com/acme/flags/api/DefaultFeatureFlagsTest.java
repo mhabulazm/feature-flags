@@ -1,6 +1,7 @@
 package com.acme.flags.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
@@ -90,6 +91,24 @@ class DefaultFeatureFlagsTest {
         engine.returnBoolean(true);
 
         assertThat(flags.isEnabled(BOOL_FLAG)).isTrue();
+    }
+
+    @Test
+    void isEnabled_propagatesException_whenEngineThrowsNonTransportError() {
+        engine.throwOnEvaluate(new IllegalStateException("adapter bug"));
+
+        assertThatThrownBy(() -> flags.isEnabled(BOOL_FLAG, FlagContext.anonymous()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("adapter bug");
+    }
+
+    @Test
+    void getVariant_propagatesException_whenEngineThrowsNonTransportError() {
+        engine.throwOnEvaluate(new IllegalStateException("adapter bug"));
+
+        assertThatThrownBy(() -> flags.getVariant(BOOL_FLAG, String.class, "fallback", FlagContext.anonymous()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("adapter bug");
     }
 
     private record TestFlagKey(String key, FlagMetadata metadata) implements FlagKey {

@@ -2,6 +2,8 @@ package com.acme.flags.springboot;
 
 import com.acme.flags.api.DefaultFeatureFlags;
 import com.acme.flags.api.FeatureFlags;
+import com.acme.flags.api.FlagContext;
+import com.acme.flags.api.FlagContextResolver;
 import com.acme.flags.noop.FlagOverridesProperties;
 import com.acme.flags.noop.InMemoryFlagEngine;
 import com.acme.flags.noop.NoOpFlagEngine;
@@ -11,7 +13,10 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 
 @AutoConfiguration
@@ -42,5 +47,20 @@ public class FlagsAutoConfiguration {
     @ConditionalOnMissingBean(FeatureFlags.class)
     public FeatureFlags featureFlags(FlagEngine engine, MeterRegistry metrics) {
         return new DefaultFeatureFlags(engine, metrics);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(FlagContextResolver.class)
+    public FlagContextResolver anonymousFlagContextResolver() {
+        return FlagContext::anonymous;
+    }
+
+    @Bean
+    @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
+    public FilterRegistrationBean<FlagContextFilter> flagContextFilterRegistration(FlagContextResolver resolver) {
+        FilterRegistrationBean<FlagContextFilter> registration =
+                new FilterRegistrationBean<>(new FlagContextFilter(resolver));
+        registration.setOrder(SecurityProperties.DEFAULT_FILTER_ORDER + 1);
+        return registration;
     }
 }

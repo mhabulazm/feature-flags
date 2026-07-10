@@ -31,6 +31,8 @@ These carry forward from ADR 0001 and the facade sketch's guardrails, made expli
 
 The first five modules are fully buildable, testable, and consumable by services today. This is the mechanism by which "design the facade before the engine" actually works as an engineering strategy, not just a planning exercise.
 
+**Update:** `flags-engine-goff`'s module shell — POM entry, package structure, and an inert `GoffFlagEngine` that throws `UnsupportedOperationException` — already shipped on `main` ahead of ADR 0002, as a pre-ratification spike (see `flags-engine-goff/README.md`). The "After ADR 0002" ship date above refers to the *functioning* adapter (real OpenFeature/GOFF SDK wiring, vendor dependencies uncommented), not the module's existence.
+
 ---
 
 ## 3. Core interfaces
@@ -78,7 +80,9 @@ public final class FlagContext {
     private final Map<String, String> traits;
 
     public static FlagContext current() {
-        // resolves from request-scoped tenant/security context; see §6 for trait sourcing
+        // resolves from FlagContextHolder (a ThreadLocal), populated by flags-spring-boot-starter's
+        // FlagContextFilter from the active FlagContextResolver bean; see the Slice A spec for the
+        // full design: docs/superpowers/specs/2026-07-09-flags-v1-slice-a-facade-hardening-design.md
     }
 
     public static FlagContext forTenant(String tenantId) { ... }
@@ -280,6 +284,8 @@ class NoOpFlagEngineTest extends FlagEngineContractTest {
 4. **Flip `flags.engine=<chosen>` per service.** Zero call-site changes — this is the same swap mechanic demonstrated in `feature-flags-use-cases.md`'s in-house facade Use Case 3, just exercised in the opposite direction (no engine → an engine, instead of engine A → engine B).
 
 This is the concrete payoff of designing the facade first: typed API, governance, and consistent failure-policy behavior land in every service now, and the eventual engine decision becomes a config change layered on top rather than a blocking dependency for starting the work.
+
+**Superseded by:** [`feature-flags-v1-roadmap.md`](feature-flags-v1-roadmap.md) — this plan predates ADR 0002 Part B's B1/B2/B3 scope additions; the roadmap sequences the full remaining v1 work (including B1/B2/B3) against its real blockers and links a detailed spec per slice.
 
 ---
 
