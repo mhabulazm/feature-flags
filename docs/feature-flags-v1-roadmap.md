@@ -67,9 +67,11 @@ Neither of these has a spec file. They need a decision-maker, not a design.
 
 `docs/feature-flags-research-gaps-v2.md`'s own Recommended Actions table names concrete doc edits that were identified but never applied. Tracked here so they aren't lost, not auto-applied as part of this roadmap (they touch ADR text, which deserves its own review rather than a side effect of writing a roadmap):
 
-- **Thread 1** — reword ADR 0002 Part A's "a future third engine that is also OpenFeature-compliant needs no new adapter at all, only a configuration change" to something closer to "adapter code shrinks, not disappears," per source [19]'s finding that open-standard compliance doesn't guarantee full cross-vendor interoperability without the destination vendor's own investment in it.
+**Status: all three items below applied 2026-07-10 — this backlog is now cleared.**
+
+- **Thread 1** — ~~reword ADR 0002 Part A's "…needs no new adapter at all, only a configuration change" to "adapter code shrinks, not disappears," per source [19]'s finding that open-standard compliance doesn't guarantee full cross-vendor interoperability without the destination vendor's own investment.~~ **Done (2026-07-10)** — reworded in ADR 0002 Part A (with the [19] caveat), and the same overclaim softened in ADR 0002's Consequences and the ratification-checklist mirror.
 - **Thread 3** — ~~add the ~90%-false-positive expectation (source [24]) and the "Tier 1.5" similarity-based triage follow-up (source [25]) to ADR 0003's "Follow-ups / open questions" section.~~ **Done (2026-07-10)** — both folded into ADR 0003's heuristic-precision follow-up at ratification.
-- **Thread 5** — add a relay-proxy latency-benchmark action item to ADR 0002 or 0003's follow-ups, given source [31]'s sidecar-overhead findings (up to 269% higher latency) apply directly to GOFF's relay-proxy deployment mode, which `feature-flags-comparison.md`/`feature-flags-use-cases.md` recommend without quantifying that cost.
+- **Thread 5** — ~~add a relay-proxy latency-benchmark action item to ADR 0002/0003's follow-ups, given source [31]'s sidecar-overhead findings (up to 269% higher latency) apply directly to GOFF's relay-proxy deployment mode.~~ **Done (2026-07-10)** — added to ADR 0002's Follow-ups, tied to Gate 1's peak-load evidence (benchmark relay-proxy vs embedded p99).
 
 ---
 

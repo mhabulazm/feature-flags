@@ -57,7 +57,7 @@ Kept in front of the meeting so the default is understood, not assumed:
 
 - The facade's entire justification is avoiding lock-in, and the lock-in literature names **standardized formats and protocols** as the single most effective mitigation [8].
 - GOFF is built on **OpenFeature** (an industry-standard evaluation API); Unleash speaks a proprietary SDK.
-- Choosing the standards-native engine means the **adapter itself writes to a standard** — so a future third engine that is also OpenFeature-compliant needs *no new adapter*, only a configuration change. That compounds the very insurance the facade exists to buy.
+- Choosing the standards-native engine means the **adapter itself writes to a standard** — so a future third engine that is also OpenFeature-compliant needs *far less adapter work*, closer to a configuration change than a rewrite (adapter code shrinks rather than disappears; context-translation still needs re-validating per provider, since OpenFeature compliance is necessary but not sufficient — see ADR 0002 Part A). That compounds the very insurance the facade exists to buy.
 
 The research review tilts the *criteria* toward GOFF; Gates 1 and 2 are the two things it cannot decide for us.
 

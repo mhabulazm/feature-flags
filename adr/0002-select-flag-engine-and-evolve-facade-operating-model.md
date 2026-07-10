@@ -1,6 +1,6 @@
 # ADR 0002: Select the Feature-Flag Engine and Evolve the Facade Operating Model
 
-> **Draft — notes toward a decision.** Not accepted. The engine pick (§Decision, Part A) needs team ratification before this moves to *Accepted*; the operating-model changes (Part B) propose amendments to ADR 0001 and should be reviewed alongside it. Citation markers `[n]` refer to the numbered list in `../docs/feature-flags-research-references.md`.
+> **Draft — notes toward a decision.** Not accepted. The engine pick (§Decision, Part A) needs team ratification before this moves to *Accepted*; the operating-model changes (Part B) propose amendments to ADR 0001 and should be reviewed alongside it. Citation markers `[n]` refer to the numbered reference lists: `[1]`–`[17]` in `../docs/feature-flags-research-references.md`, and the v2 extension `[18]`–`[31]` in `../docs/feature-flags-research-gaps-v2.md`.
 
 ## Status
 
@@ -23,7 +23,7 @@ Since 0001 we ran a literature review — 17 peer-reviewed sources, catalogued i
 
 ### Part A — Engine selection
 
-ADR 0001's tiebreak weighted *proven-at-scale maturity* and gave Unleash the edge. The review adds a factor that tiebreak underweighted: the facade's entire justification is avoiding lock-in, and the lock-in literature names **standardized formats and protocols** as the single most effective mitigation [8]. GO Feature Flag is built on **OpenFeature** (an industry-standard evaluation API); Unleash speaks a proprietary SDK. Choosing the standards-native engine means the *adapter itself* writes to a standard — so a future third engine that is also OpenFeature-compliant needs no new adapter at all, only a configuration change. That compounds the very insurance the facade exists to buy.
+ADR 0001's tiebreak weighted *proven-at-scale maturity* and gave Unleash the edge. The review adds a factor that tiebreak underweighted: the facade's entire justification is avoiding lock-in, and the lock-in literature names **standardized formats and protocols** as the single most effective mitigation [8]. GO Feature Flag is built on **OpenFeature** (an industry-standard evaluation API); Unleash speaks a proprietary SDK. Choosing the standards-native engine means the *adapter itself* writes to a standard — so for a future third engine that is also OpenFeature-compliant, **adapter code shrinks rather than disappears**: the swap is far closer to a configuration change than a rewrite, but `GoffFlagEngine`'s context-translation and typed-dispatch logic would still need re-validating against the new provider's *actual* OpenFeature implementation, not just its compliance label. Open-standard compliance is necessary but not sufficient for full cross-vendor interoperability — vendors often lack commercial motivation to invest beyond nominal compliance [19]. It still compounds the very insurance the facade exists to buy, just less absolutely than "no new adapter at all" would imply.
 
 **Decision: GO Feature Flag is the chosen engine.** Unleash remains the documented fallback if GOFF fails to meet scale or self-serve requirements during ratification evidence gathering (see `0002-ratification-checklist.md` Gates 1 and 2).
 
@@ -47,7 +47,7 @@ Either way, reconcile the "adds no I/O" claim in `feature-flags-use-cases.md` wi
 
 ### Positive
 - Implementation can start: the engine is chosen (pending ratification), unblocking the `flags-engine-*` adapter and the `1.0.0` cut described in `feature-flags-facade-design.md` §8.
-- Picking the OpenFeature-native engine maximizes the lock-in insurance the facade was built for — the adapter writes to a standard, and a future engine swap can become zero-adapter.
+- Picking the OpenFeature-native engine maximizes the lock-in insurance the facade was built for — the adapter writes to a standard, so a future engine swap is far closer to a configuration change than a rewrite (adapter code shrinks rather than vanishing — OpenFeature compliance is necessary but not sufficient [19]).
 - Governance automation (B1) heads off the inventory-growth failure mode every longitudinal study documents [1][6][7], instead of discovering it after the fleet has hundreds of stale flags.
 - Interaction visibility (B2) closes the highest-severity risk class in the corpus [2][4].
 
@@ -68,6 +68,7 @@ One amendment for the new tooling: the B1 governance job and the B2 interaction 
 - **Facade ownership** — still open from ADR 0001: which team owns the library, its versioning, and the on-call rotation for the evaluation path (now also owns the B1 governance job).
 - **Interaction detection scope (B2)** — split into **ADR 0003 (draft)** (`0003-cross-service-flag-interaction-scan.md`), which decides it stays a build-time static scan (Tier 1) behind an escalation trigger to a runtime subsystem (Tier 2 → future ADR); confirm that scope at ratification.
 - **`InMemoryFlagEngine` + AWS Parameter Store path** (`feature-flags-facade-design.md` §4) — confirm overrides are cached, not read per-evaluation, so this bridge mode doesn't itself violate the B3 "no I/O on the hot path" property.
+- **Relay-proxy latency benchmark (GOFF deployment mode).** `feature-flags-comparison.md` and `feature-flags-use-cases.md` (Use Cases 1–2) recommend GOFF's relay-proxy / sidecar deployment mode without quantifying its latency cost. A relay proxy is structurally a network hop per evaluation, unlike embedded/in-process mode; measured sidecar overhead runs up to **269% higher latency** (and up to 163% more vCPU) versus in-process handling [31]. Benchmark the relay-proxy path's added p99 latency against embedded mode as part of Gate 1's peak-load evidence, and record it so the deployment-mode recommendation is quantified rather than assumed equivalent.
 - **See `../docs/feature-flags-v1-roadmap.md`** for how ratification and these follow-ups sequence against the rest of v1 (Slices A–E), including the open question of whether B1/B2 can ship ahead of the bundled `1.0.0` cut this ADR's Consequences section implies.
 
 ## References

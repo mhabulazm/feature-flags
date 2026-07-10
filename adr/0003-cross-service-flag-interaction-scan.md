@@ -1,6 +1,6 @@
 # ADR 0003: Cross-Service Flag Interaction Visibility via a Build-Time Static Scan
 
-> **Accepted (2026-07-10).** This ADR took up the scope-check ADR 0002 Part B (B2) deferred to it — whether cross-service flag-interaction visibility stays a scan or becomes its own subsystem — and resolves it as a build-time static **advisory** scan (Tier 1), with the heavier runtime subsystem deferred behind an explicit trigger (Tier 2 → ADR 0004). Ratified in the sandbox as a scope/architecture decision (no separate team sign-off exists at this project stage); this discharges the B2 interaction-scan-scope blocker in `0002-ratification-checklist.md`. Citation markers `[n]` refer to the numbered list in `../docs/feature-flags-research-references.md`.
+> **Accepted (2026-07-10).** This ADR took up the scope-check ADR 0002 Part B (B2) deferred to it — whether cross-service flag-interaction visibility stays a scan or becomes its own subsystem — and resolves it as a build-time static **advisory** scan (Tier 1), with the heavier runtime subsystem deferred behind an explicit trigger (Tier 2 → ADR 0004). Ratified in the sandbox as a scope/architecture decision (no separate team sign-off exists at this project stage); this discharges the B2 interaction-scan-scope blocker in `0002-ratification-checklist.md`. Citation markers `[n]` refer to the numbered reference lists: `[1]`–`[17]` in `../docs/feature-flags-research-references.md`, and the v2 extension `[18]`–`[31]` in `../docs/feature-flags-research-gaps-v2.md`.
 
 ## Status
 
