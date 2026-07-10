@@ -2,11 +2,13 @@
 
 > **Purpose.** Complete this checklist before changing ADR 0002's Status from *Proposed (draft)* to *Accepted*. It turns Part A's engine recommendation and its two flip conditions into explicit go/no-go gates, and gathers the remaining items that ADR 0001/0002 say must be settled before implementation starts. Citation markers `[n]` refer to the numbered list in `../docs/feature-flags-research-references.md`.
 
+> **Engine Decision Status:** GO Feature Flag is the chosen engine (updated 2025-01-XX). Gates 1 and 2 below are now evidence-gathering activities to **confirm** this decision, not decision points. Unleash remains the documented fallback if evidence shows GOFF cannot meet requirements.
+
 ## Decision rule
 
-**Adopt GO Feature Flag (GOFF) as the engine unless Gate 1 or Gate 2 fails — in which case fall back to Unleash.**
+**GO Feature Flag is the chosen engine.** Gates 1 and 2 below are evidence-gathering activities to **confirm** this decision against actual requirements. If evidence shows GOFF cannot meet the pass criteria, the decision flips to Unleash as the fallback.
 
-GOFF is the *recommended default* because it is OpenFeature-native (see §"Why GOFF by default"). The two gates below are the only findings the research review could not settle for us; they are business/ops judgments about our real load and our real users. ADR 0002 is not *Accepted* until **both** engine gates are resolved (PASS, or FAIL → Unleash) **and** every item in "Also required before Accepted" is checked or consciously waived.
+GOFF was selected because it is OpenFeature-native (see §"Why GOFF by default"). The two gates below are the only findings the research review could not settle for us; they are business/ops judgments about our real load and our real users. ADR 0002 is not *Accepted* until **both** engine gates are resolved (PASS, or FAIL → Unleash) **and** every item in "Also required before Accepted" is checked or consciously waived.
 
 Each gate records: the proposed pass criterion, the evidence to gather, a result, and what a failure means.
 
@@ -75,7 +77,7 @@ These are open items from ADR 0001/0002 that gate implementation start; the engi
 
 | Field | Value |
 |---|---|
-| Engine ratified | ☐ GO Feature Flag   ☐ Unleash |
+| Engine ratified | ☐ GO Feature Flag (chosen, pending evidence confirmation)   ☐ Unleash (fallback if Gates 1/2 fail) |
 | Gate 1 (peak-load) | ☐ PASS  ☐ FAIL |
 | Gate 2 (self-serve) | ☐ PASS  ☐ FAIL |
 | Non-engine blockers all checked/waived | ☐ Yes |

@@ -4,7 +4,7 @@
 
 ## Status
 
-Proposed (draft). Supersedes parts of ADR 0001's governance and guardrail sections as noted in Part B. Blocks implementation start until ratified. Ratification is gated by the checklist in `0002-ratification-checklist.md` — complete both engine gates and the non-engine blockers there before changing this Status to *Accepted*.
+Proposed (draft). **Engine selection (Part A) is decided — GO Feature Flag is the chosen engine.** Remaining items (Part B operating model changes, non-engine blockers from `0002-ratification-checklist.md`) still block full ratification to *Accepted*.
 
 ## Context
 
@@ -25,13 +25,7 @@ Since 0001 we ran a literature review — 17 peer-reviewed sources, catalogued i
 
 ADR 0001's tiebreak weighted *proven-at-scale maturity* and gave Unleash the edge. The review adds a factor that tiebreak underweighted: the facade's entire justification is avoiding lock-in, and the lock-in literature names **standardized formats and protocols** as the single most effective mitigation [8]. GO Feature Flag is built on **OpenFeature** (an industry-standard evaluation API); Unleash speaks a proprietary SDK. Choosing the standards-native engine means the *adapter itself* writes to a standard — so a future third engine that is also OpenFeature-compliant needs no new adapter at all, only a configuration change. That compounds the very insurance the facade exists to buy.
 
-**Recommendation: adopt GO Feature Flag as the engine, with Unleash as the documented fallback.**
-
-Flip the recommendation to **Unleash** if, at ratification, either is a hard near-term requirement:
-- proven behavior at a scale GOFF's smaller community has not yet demonstrated for our peak load, or
-- first-class self-serve flag management for non-engineers (GOFF's admin UI is thin; flags-as-config is GitOps-friendly but not PM-friendly).
-
-This is the one decision in this ADR that is genuinely a business/ops judgment, not a research finding — the review tilts the criteria toward GOFF but does not settle the scale/UI question. **Ratify against our actual peak load and self-serve needs before marking this Accepted.**
+**Decision: GO Feature Flag is the chosen engine.** Unleash remains the documented fallback if GOFF fails to meet scale or self-serve requirements during ratification evidence gathering (see `0002-ratification-checklist.md` Gates 1 and 2).
 
 ### Part B — Evolution of the facade operating model (amends ADR 0001)
 
@@ -70,7 +64,7 @@ One amendment for the new tooling: the B1 governance job and the B2 interaction 
 
 ## Follow-ups / open questions
 
-- **Ratify the engine (GOFF recommended).** The one item needing human sign-off before *Accepted* — decide against our real peak load and self-serve requirements, per Part A's flip conditions.
+- ~~**Ratify the engine (GOFF recommended).**~~ **Engine is decided: GO Feature Flag.** Remaining ratification work is evidence gathering (Gates 1 and 2 in `0002-ratification-checklist.md`) to confirm the decision against actual scale and self-serve requirements.
 - **Facade ownership** — still open from ADR 0001: which team owns the library, its versioning, and the on-call rotation for the evaluation path (now also owns the B1 governance job).
 - **Interaction detection scope (B2)** — split into **ADR 0003 (draft)** (`0003-cross-service-flag-interaction-scan.md`), which decides it stays a build-time static scan (Tier 1) behind an escalation trigger to a runtime subsystem (Tier 2 → future ADR); confirm that scope at ratification.
 - **`InMemoryFlagEngine` + AWS Parameter Store path** (`feature-flags-facade-design.md` §4) — confirm overrides are cached, not read per-evaluation, so this bridge mode doesn't itself violate the B3 "no I/O on the hot path" property.
