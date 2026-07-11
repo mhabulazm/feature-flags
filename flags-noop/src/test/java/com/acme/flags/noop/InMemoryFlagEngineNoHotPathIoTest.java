@@ -1,6 +1,7 @@
 package com.acme.flags.noop;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -39,6 +40,7 @@ class InMemoryFlagEngineNoHotPathIoTest {
     void evaluateBoolean_readsOverridesFromMemory_noRebind() {
         // Arrange: set up an override
         properties.getOverrides().put("test-flag", "true");
+        clearInvocations(properties); // ignore the Arrange read; verify only the evaluation-phase reads
 
         // Act: evaluate multiple times
         for (int i = 0; i < 10; i++) {
@@ -67,6 +69,7 @@ class InMemoryFlagEngineNoHotPathIoTest {
     void evaluateVariant_readsOverridesFromMemory_noRebind() {
         // Arrange: set up a string variant override
         properties.getOverrides().put("test-variant", "variant-a");
+        clearInvocations(properties); // ignore the Arrange read; verify only the evaluation-phase reads
 
         // Act: evaluate multiple times
         for (int i = 0; i < 10; i++) {
@@ -96,6 +99,7 @@ class InMemoryFlagEngineNoHotPathIoTest {
         properties.getOverrides().put("flag-1", "true");
         properties.getOverrides().put("flag-2", "false");
         properties.getOverrides().put("flag-3", "true");
+        clearInvocations(properties); // ignore the Arrange reads; verify only the evaluation-phase reads
 
         // Act: evaluate all flags multiple times
         for (int i = 0; i < 5; i++) {
