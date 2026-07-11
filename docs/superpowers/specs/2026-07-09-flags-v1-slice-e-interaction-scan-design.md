@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft — **blocked** on ADR 0003 *Accepted* specifically (folded into ADR 0002's own sign-off per the ratification checklist — not a separate "ADR 0002 AND ADR 0003" condition). Part of the [v1 roadmap](../../feature-flags-v1-roadmap.md).
+Tier 1a implementation design **approved 2026-07-10** (see the "Tier 1a implementation design" section below). ADR 0003 is now *Accepted*, so **Tier 1a is unblocked and ready to implement**; Tier 1b (cross-repo aggregation) remains blocked on the absence of any consuming service to aggregate from. Part of the [v1 roadmap](../../feature-flags-v1-roadmap.md).
 
 ## Purpose
 
@@ -30,7 +30,7 @@ ADR 0003 itself lists this as an explicitly open follow-up ("how a fleet-level s
 - **Tier 1a — single-service static scan (buildable now).** The actual co-reference/nesting/cross-service-reference detection logic, implemented as a standalone, reusable scanner (likely via a Java source-analysis library — JavaParser or similar — parsing `.java` files for references to `FlagKey`-implementing enum constants). Testable today against synthetic fixture registries and synthetic call sites this slice builds itself, exactly like Slice D's fixture problem. This is genuinely completable without waiting on any other service to exist.
 - **Tier 1b — cross-repo aggregation wiring (blocked).** Whichever mechanism gets chosen (published-artifact-per-service is the most plausible candidate given no monorepo exists and a CI-aggregation step needs somewhere real to check out from) has no consuming service to test against yet. This half of "Tier 1" cannot be meaningfully built or validated until at least one real service with its own `FlagKey` registry exists.
 
-This split is a recommendation this spec is making, not a decision ADR 0003 has ratified — flag it for review when this slice is picked up.
+This split is a recommendation this spec is making, not a decision ADR 0003 has ratified — flag it for review when this slice is picked up. **(Reviewed and confirmed 2026-07-10; the "Tier 1a implementation design" section below builds on it.)**
 
 ## Other gaps (ADR 0003's own "Follow-ups / open questions," still open)
 
@@ -38,6 +38,39 @@ This split is a recommendation this spec is making, not a decision ADR 0003 has 
 - **A "Tier 1.5" improvement exists in the literature and isn't recorded in ADR 0003.** Thread 3 [25] also found that triaging new findings by similarity to *previously confirmed* interactions meaningfully improves precision (83% accuracy, 60–100% coverage in evaluation) — but it needs a corpus of confirmed interactions to compare against, which won't exist on day one. Worth noting as a natural v2 for this scan once Tier 1a has accumulated reviewed findings, not something to build in this slice.
 - **Interaction heuristic precision** — the exact rule for "referenced in combination" (AST co-reference scope, how deep nesting is followed) is unspecified beyond the three named categories above. This slice has to make that call; ADR 0003 doesn't.
 - **Graduation criteria and the Tier 2 escalation threshold are both still "set at ratification"** per ADR 0003 — not real numbers yet. This slice should not invent them; it should build the scan to be advisory-only as specified and leave the threshold-setting to whoever eventually reviews accumulated findings against ADR 0003's own escalation triggers (an incident traced to something the scan structurally couldn't see; interactions becoming materially dynamic/config-driven; or a team-set count threshold).
+
+## Tier 1a implementation design (approved 2026-07-10)
+
+### Module & packaging
+
+A new module **`flags-interaction-scan`** — a standalone build tool, like `flags-benchmark-goff`, **deliberately excluded from `flags-bom`**. Nothing in the facade runtime depends on it; ADR 0003 scopes it as CI tooling that "runs alongside the B1 job under the same owner," not shipped API. Dependencies: `com.github.javaparser:javaparser-core:3.28.2`, plus JUnit 5 + AssertJ (test). Java 21, same parent POM. It does **not** depend on `flags-api` — the scanner reads source text, it does not link against the facade types.
+
+### Architecture — four small units, source-in → advisory-report-out
+
+1. **`FlagRegistryIndex`** — parses all `.java` under the given roots, finds enums whose `implements` clause names `FlagKey`, and collects each enum constant together with its **namespace** (the prefix of its `key()` string literal before the first `.`, e.g. `billing` from `billing.rate-limit-override`). This is ADR 0003's required "inventory of known keys and their owning service."
+2. **`FlagReferenceScanner`** — walks method bodies and records a `FlagReference` for each indexed constant used as an argument to a `FeatureFlags` evaluation call (`isEnabled` / `getVariant` / `getConfigValue`), capturing file:line, the enclosing method, and the enclosing `if`-branch chain.
+3. **`InteractionDetector`** — applies the three category rules (below) over the collected references and emits `Interaction` findings.
+4. **`InteractionReport`** + a CLI entrypoint **`InteractionScanMain`** — render the findings read-only; runnable via the `exec-maven-plugin`, the same way the benchmark module runs.
+
+**Detection is purely *syntactic* in Tier 1a — no symbol-solver, no compilation.** JavaParser matches the `implements FlagKey` clause and argument positions by name and structure alone, without resolving types against a classpath. This is a deliberate precision trade: a name collision, or a non-facade method that happens to be called `isEnabled`, will match and produce a false positive. That is exactly the ~90%-false-positive reality [24] the advisory-only contract exists to absorb. Full symbol resolution (via `javaparser-symbol-solver-core`) is noted as a Tier-1.5 precision enhancement, not built in this slice.
+
+### Detection rules
+
+ADR 0003 names the three categories but leaves their exact rules to implementation. Tier 1a pins them as:
+
+- **Co-reference** — two or more *distinct* `FlagKey` constants referenced within the same method body. Two keys in the same conditional expression are reported as a stronger sub-signal of the same category.
+- **Nesting** — a `FlagKey` reference located inside the then/else block of an `if` whose condition references a *different* `FlagKey`. Followed transitively through nested `if`s, recording nesting depth.
+- **Cross-service** — a reference whose `FlagKey` namespace differs from the enclosing file's owning namespace (the namespace of the registry the file declares, else its package). Since no real services exist, fixtures model a service as a package.
+
+Every finding carries its category, the key(s) involved, and the referencing site (file:line) — exactly ADR 0003's "interacting key pairs/groups, with the referencing site."
+
+### Output — read-only, advisory (a structural contract)
+
+The scan emits an interaction report: findings grouped by category, each with its keys and site. Plain text by default, `--json` for a machine-readable form. It **exits 0 regardless of findings, and contains no code path that mutates, toggles, or persists anything.** ADR 0003's and ADR 0002's read-only/advisory guardrail is therefore enforced by construction, not by convention — distinct from Slice D's metadata CI gate, which *is* allowed to block. The report header states the ~90%-false-positive expectation so output is triaged, not trusted.
+
+### Testing — synthetic fixtures
+
+Because no real services or registries exist, the scanner is proven against synthetic fixture `.java` files under `src/test/resources/fixtures/` (parsed as source text; they need not compile). One fixture tree per category — co-reference, nesting, cross-service (two packages standing in for two services) — plus a **negative** fixture of isolated single-flag uses that must produce zero findings. Unit tests assert each detector finds exactly the planted interactions and nothing in the negative case.
 
 ## Out of scope
 
