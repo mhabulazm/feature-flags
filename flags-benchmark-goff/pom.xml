@@ -16,8 +16,8 @@
     <description>Standalone load-test harness gathering peak-load evidence for ADR 0002's ratification checklist Gate 1. NOT a published flags-* artifact -- deliberately excluded from flags-bom. Requires Docker to run; see README.</description>
 
     <properties>
-        <openfeature-sdk.version>1.15.1</openfeature-sdk.version>
-        <goff-provider.version>0.4.3</goff-provider.version>
+        <openfeature-sdk.version>1.21.0</openfeature-sdk.version>
+        <goff-provider.version>1.2.0</goff-provider.version>
         <testcontainers.version>2.0.5</testcontainers.version>
     </properties>
 

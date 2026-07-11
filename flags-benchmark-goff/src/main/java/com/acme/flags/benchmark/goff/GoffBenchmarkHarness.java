@@ -2,6 +2,7 @@ package com.acme.flags.benchmark.goff;
 
 import dev.openfeature.contrib.providers.gofeatureflag.GoFeatureFlagProvider;
 import dev.openfeature.contrib.providers.gofeatureflag.GoFeatureFlagProviderOptions;
+import dev.openfeature.contrib.providers.gofeatureflag.bean.EvaluationType;
 import dev.openfeature.contrib.providers.gofeatureflag.exception.InvalidOptions;
 import dev.openfeature.sdk.Client;
 import dev.openfeature.sdk.EvaluationContext;
@@ -16,124 +17,95 @@ import org.testcontainers.utility.MountableFile;
 /**
  * Gate 1 (ADR 0002 ratification checklist) peak-load evidence harness.
  *
- * <p><strong>Status: written, not executed.</strong> This code compiles against the real
- * OpenFeature/GOFF dependencies, but has never actually been run against a live GOFF instance --
- * the environment this was built in has no Docker daemon available. Whoever picks up Slice B needs
- * Docker (for the Testcontainers-managed relay-proxy) to produce real numbers. See the module
- * README for how to run it.
+ * <p><strong>Status: written and compiles, not yet executed.</strong> This harness compiles against
+ * the real OpenFeature/GOFF dependencies but has never been run against a live GOFF instance --
+ * running {@code main()} needs a Docker daemon for the Testcontainers-managed relay-proxy, which is
+ * not available in the environment it was built in. Treat any numbers it would produce as
+ * unverified until someone with Docker actually runs it. See the module README for how.
  *
- * <p>Benchmarks the raw OpenFeature Java SDK/Client directly -- not the not-yet-built
- * {@code GoffFlagEngine} production adapter (that's Slice C, blocked on ratification). Gate 1's
- * question is about the engine's capacity, not the facade's overhead; the facade's own "no I/O"
- * property is a separate, already-argued claim (see Slice A and the Context Object pattern research
- * in feature-flags-research-gaps-v2.md Thread 4), not something this harness needs to re-prove.
+ * <p>Benchmarks the raw OpenFeature Java SDK/{@link Client} directly -- not the not-yet-built
+ * {@code GoffFlagEngine} production adapter (Slice C, blocked on ratification). Gate 1's question is
+ * about the engine's capacity, not the facade's overhead; the facade's own "no I/O" property is a
+ * separate, already-argued claim (Slice A and feature-flags-research-gaps-v2.md Thread 4), not
+ * something this harness needs to re-prove.
  *
- * <h2>Gate 1 blocker: no embedded/{@code IN_PROCESS} mode at this module's pinned provider version</h2>
+ * <h2>Two deployment modes, per the Slice B spec</h2>
  *
- * <p>The design spec (Gate 1, "deployment mode must be explicit and singular per run") calls for
- * embedded/library-mode evidence as the <em>primary</em> thing Gate 1 needs, with relay-proxy mode
- * only as a secondary, separately-labelled run. This module pins
- * {@code dev.openfeature.contrib.providers:go-feature-flag:0.4.3} (see the module {@code pom.xml},
- * Task 2), and that version's public API has no in-process evaluation mode at all -- every
- * evaluation is an HTTP round trip to a GOFF relay-proxy via
- * {@code GoFeatureFlagController.evaluateFlag(...)}. Verified two ways:
+ * <p>The design spec requires deployment mode to be explicit and singular per run, with
+ * embedded/library mode as the <em>primary</em> Gate 1 evidence and relay-proxy mode as a
+ * secondary, separately-labelled run. This harness runs both, in that order, each bound to its own
+ * OpenFeature domain so the two providers stay independent:
  * <ul>
- *   <li>{@code javap -public} against the pinned 0.4.3 jar shows
- *       {@code GoFeatureFlagProviderOptionsBuilder} has no {@code evaluationType(...)} method, and
- *       {@code unzip -l} of that jar has no {@code EvaluationType} class anywhere in it.</li>
- *   <li>Downloading {@code go-feature-flag:1.2.0} (the current latest, per Maven Central's
- *       {@code maven-metadata.xml}) and running the same {@code javap}/{@code unzip} commands shows
- *       {@code dev.openfeature.contrib.providers.gofeatureflag.bean.EvaluationType} <em>does</em>
- *       exist there, with exactly the {@code IN_PROCESS}/{@code REMOTE} constants the design spec
- *       and this class's earlier draft assumed. Bisecting further shows the class is already present
- *       in provider {@code 1.0.0} -- i.e. the feature was added somewhere in the {@code 0.4.x -> 1.0.0}
- *       jump, after the version this module pins.</li>
+ *   <li><strong>Embedded / {@link EvaluationType#IN_PROCESS} (primary).</strong> The provider
+ *       fetches the flag configuration from the relay-proxy once at startup and polls it for
+ *       changes (every {@link #FLAG_CONFIG_POLL_INTERVAL_MILLIS} ms); each evaluation then runs
+ *       locally through the bundled WASM evaluator on the Chicory runtime, with <em>no
+ *       per-evaluation network hop</em>. This is the mode the checklist's "already-request-scoped /
+ *       cached state, not a per-evaluation network call" condition actually describes, and the mode
+ *       GOFF's Tier-1 in-process story rests on.</li>
+ *   <li><strong>Relay-proxy / {@link EvaluationType#REMOTE} (secondary).</strong> Every evaluation
+ *       is an HTTP round trip to the relay-proxy -- structurally a sidecar-shaped network hop (see
+ *       feature-flags-research-gaps-v2.md Thread 5, literature-quantified at up to 269% higher
+ *       latency than in-process), a categorically different cost profile that must be labelled
+ *       distinctly rather than left to stand in for the embedded numbers.</li>
  * </ul>
  *
- * <p>Consequence: this harness currently produces <strong>relay-proxy/{@code REMOTE}-mode numbers
- * only</strong>. It does not, and as written cannot, produce the embedded-mode evidence Gate 1
- * primarily asks for. <strong>Gate 1 is therefore NOT satisfied by this module as it stands</strong> --
- * relay-proxy/{@code REMOTE} numbers are the secondary evidence the design spec allows, not a
- * substitute for the primary embedded-mode evidence it requires, and that primary evidence remains
- * unproduced. This is a blocker for Slice B / Gate 1 sign-off, not a minor caveat, and it is a real
- * gap for whoever advances Slice B, not a simplification made in this pass.
+ * <h2>Dependency stack (the embedded-mode blocker is now resolved)</h2>
  *
- * <p>Bumping the GOFF provider to {@code >= 1.0.0} is <strong>not a one-line version change</strong>
- * -- it is a coordinated dependency-stack change. Dependency resolution confirms provider
- * {@code 1.0.0} requires {@code dev.openfeature:sdk >= 1.16.0} (this module pins sdk
- * {@code 1.15.1}, below that floor), and provider {@code 1.2.0} (latest) requires
- * {@code sdk >= 1.21.0}; either provider bump therefore forces an SDK bump in the same change.
- * Separately, {@code IN_PROCESS} mode at provider {@code 1.0.0+} works by executing a bundled WASM
- * evaluator through the Chicory WASM runtime ({@code com.dylibso.chicory:runtime}/{@code wasi}) --
- * a new runtime subsystem this module does not currently depend on, not a lightweight addition. So
- * the real remediation is: bump {@code dev.openfeature:sdk} to {@code >= 1.16.0} (or
- * {@code >= 1.21.0} for provider {@code 1.2.0}) together with the GOFF provider bump, plus add the
- * Chicory WASM runtime dependency, all in one coordinated change -- a genuine architectural decision
- * for whoever owns Slice B next, not a quick fix. The alternative is (b) accept relay-proxy-only
- * evidence and get the design spec's Gate 1 requirement explicitly revised to match. Neither
- * decision belongs in this task.
+ * <p>An earlier pass pinned provider {@code go-feature-flag:0.4.3}, whose public API had no
+ * in-process mode at all -- {@code bean.EvaluationType} did not exist before provider {@code 1.0.0},
+ * so every evaluation was an HTTP round trip and Gate 1's <em>primary</em> (embedded) evidence was
+ * structurally unproducible. Resolving that is not a one-line version bump (which is why it was
+ * called out as its own task); it took a coordinated dependency-stack change:
+ * <ul>
+ *   <li>{@code go-feature-flag} provider {@code 0.4.3 -> 1.2.0} (adds
+ *       {@code bean.EvaluationType.IN_PROCESS}).</li>
+ *   <li>{@code dev.openfeature:sdk 1.15.1 -> 1.21.0} -- forced, not optional: provider {@code 1.2.0}
+ *       declares {@code sdk:[1.21.0,...)}.</li>
+ *   <li>The Chicory WASM runtime ({@code com.dylibso.chicory:wasi} plus {@code runtime}/{@code wasm}/
+ *       {@code log} at {@code 1.7.5}) arrives <em>transitively</em> via the provider -- confirmed by
+ *       {@code mvn dependency:tree}, so no explicit Chicory dependency is declared in this module's
+ *       {@code pom.xml}.</li>
+ * </ul>
+ *
+ * <p><strong>Still open -- needs Docker (the run this pass could not do):</strong> actually
+ * executing both sweeps to produce numbers, and confirming the pinned relay-proxy image
+ * ({@code v1.55.0}) exposes the flag-configuration endpoint the in-process provider polls at
+ * startup. Neither is possible without a Docker daemon; this pass delivered the code and the
+ * dependency bump only, re-verified by compilation, not execution.
  *
  * <h2>Request timeout</h2>
  *
- * <p>{@code GoFeatureFlagProviderOptionsBuilder.timeout(int)} is set explicitly to
- * {@link #REQUEST_TIMEOUT_MILLIS}. Confirmed via {@code javap -c} decompilation of
- * {@code GoFeatureFlagController}'s constructor that this value feeds
- * {@code OkHttpClient.Builder.connectTimeout/readTimeout/callTimeout/writeTimeout(...)}, all in
- * {@code TimeUnit.MILLISECONDS} (default 10,000ms if left unset/zero). This directly addresses Task
- * 4's review finding: {@code RateLimitedLoadDriver}'s worker threads call {@code Thread.interrupt()}
- * on shutdown, which cannot forcibly unblock a thread stuck inside a raw blocking socket read.
- * OkHttp's {@code callTimeout} enforces the deadline itself, independent of thread interruption, so a
- * hung relay-proxy request fails fast internally instead of parking a worker thread for the rest of
- * the run. Whether that fast failure is actually visible to {@code RateLimitedLoadDriver} as a
- * counted error is a separate question -- see the next section.
+ * <p>{@code GoFeatureFlagProviderOptions.builder().timeout(int)} is set explicitly to
+ * {@link #REQUEST_TIMEOUT_MILLIS}. In relay-proxy/{@code REMOTE} mode this bounds the per-evaluation
+ * HTTP call: the value feeds OkHttp's {@code connectTimeout/readTimeout/callTimeout/writeTimeout}
+ * (default 10,000ms if left unset). This addresses Task 4's review finding -- {@code
+ * RateLimitedLoadDriver}'s worker threads call {@code Thread.interrupt()} on shutdown, which cannot
+ * forcibly unblock a thread stuck in a raw blocking socket read; OkHttp's {@code callTimeout}
+ * enforces the deadline itself, independent of interruption, so a hung request fails fast instead of
+ * parking a worker for the rest of the run.
  *
  * <h2>Error-rate measurement: why the action calls {@code getBooleanDetails}, not {@code
  * getBooleanValue}</h2>
  *
- * <p>{@code RateLimitedLoadDriver} only counts an evaluation as an error when the action
- * {@code Runnable} throws a {@code RuntimeException} (see {@code RateLimitedLoadDriver.runWorker}).
- * An earlier draft of this class called {@code client.getBooleanValue(FLAG_KEY, false, context)}
- * directly as the action, which never throws on provider/timeout errors -- it silently returns the
- * default value instead, so the error-rate column would always read ~0% even under total GOFF
- * failure. Verified by decompiling {@code dev.openfeature.sdk.OpenFeatureClient} from the pinned
- * {@code sdk-1.15.1.jar} with {@code javap -p -c}:
+ * <p>{@code RateLimitedLoadDriver} counts an evaluation as an error only when the action {@code
+ * Runnable} throws a {@code RuntimeException}. {@code client.getBooleanValue(...)} never throws on a
+ * provider/timeout error -- it silently returns the default value -- so using it as the action would
+ * peg the error-rate column at ~0% even under total GOFF failure. This was bytecode-verified against
+ * the originally-pinned {@code sdk-1.15.1} and re-confirmed against the now-pinned {@code sdk-1.21.0}
+ * during the dependency bump above: {@code getBooleanValue(String, Boolean, EvaluationContext)} is
+ * just {@code getBooleanDetails(...).getValue()} (no error handling of its own), and the private
+ * {@code evaluateFlag(...)} it delegates through catches every {@code java.lang.Exception} raised
+ * during provider evaluation, enriching the returned {@link FlagEvaluationDetails} with the default
+ * value and an {@code ErrorCode} rather than letting anything propagate. No exception ever leaves
+ * {@code getBooleanValue}.
  *
- * <ul>
- *   <li>{@code getBooleanValue(String, Boolean, EvaluationContext)} bytecode is just an
- *       {@code invokevirtual} of {@code getBooleanDetails(...)} followed by a checkcast/unbox --
- *       {@code getBooleanValue} has no error handling of its own; it fully delegates to
- *       {@code getBooleanDetails}.</li>
- *   <li>{@code getBooleanDetails(...)} delegates in turn to the private {@code evaluateFlag(...)},
- *       whose {@code Exception table} entry {@code (34, 290) -> 309, Class java/lang/Exception} shows
- *       it catches every {@code Exception} thrown during provider evaluation (network errors,
- *       {@code ProviderNotReadyError}, OkHttp {@code callTimeout} failures, etc.) rather than letting
- *       any of them propagate.</li>
- *   <li>The catch handler (bytecode offsets 309-392) sets an {@code ErrorCode} on the
- *       {@code FlagEvaluationDetails} it is building -- {@code ErrorCode.GENERAL} for a plain
- *       exception, or the specific code from {@code OpenFeatureError.getErrorCode()} when the
- *       exception is one of those -- sets an error message, then calls the private
- *       {@code enrichDetailsWithErrorDefaults(T, FlagEvaluationDetails)} helper. That helper's own
- *       bytecode is just {@code setValue(defaultValue)} followed by
- *       {@code setReason(Reason.ERROR.toString())} -- i.e. it fills in the default value and marks
- *       the reason as {@code "ERROR"}, it does not throw. {@code evaluateFlag} then returns this
- *       enriched, non-null {@code FlagEvaluationDetails} object normally ({@code areturn} at offset
- *       432) -- no exception ever leaves {@code evaluateFlag}, {@code getBooleanDetails}, or
- *       {@code getBooleanValue}.</li>
- * </ul>
- *
- * <p>Net effect: {@code getBooleanValue} cannot be made to throw by any provider-side failure, so it
- * structurally cannot drive {@code RateLimitedLoadDriver}'s error counter. This class's action
- * therefore calls {@link Client#getBooleanDetails(String, Boolean, EvaluationContext)} instead and
- * inspects the returned {@link FlagEvaluationDetails#getErrorCode()}: per the decompilation above,
- * that field is {@code null} on a normal evaluation and non-null ({@code ErrorCode.GENERAL} or a more
- * specific code) whenever {@code evaluateFlag} swallowed an exception internally. When it is
- * non-null, the action throws a {@code RuntimeException} itself, which is exactly what
- * {@code RateLimitedLoadDriver.runWorker}'s existing {@code catch (RuntimeException)} is already
- * watching for -- restoring the "a hung/failed request is counted as an error" property the class
- * javadoc claimed but that {@code getBooleanValue} could never actually deliver. This uses only core
- * {@code dev.openfeature:sdk} API ({@code getBooleanDetails}, {@code FlagEvaluationDetails}) already
- * on this module's classpath -- it does not require the GOFF-provider-version bump documented above,
- * which is a separate, unrelated gap ({@code IN_PROCESS} evaluation mode).
+ * <p>So the action instead calls {@link Client#getBooleanDetails(String, Boolean, EvaluationContext)}
+ * and inspects {@link FlagEvaluationDetails#getErrorCode()} -- {@code null} on a normal evaluation,
+ * non-null whenever {@code evaluateFlag} swallowed an exception internally. When it is non-null the
+ * action throws, which is exactly what {@code RateLimitedLoadDriver.runWorker}'s {@code catch
+ * (RuntimeException)} already watches for. This uses only core {@code dev.openfeature:sdk} API and is
+ * independent of the deployment mode being measured.
  */
 public final class GoffBenchmarkHarness {
 
@@ -144,25 +116,40 @@ public final class GoffBenchmarkHarness {
     private static final int REQUEST_TIMEOUT_MILLIS = 3_000;
 
     /**
-     * Pinned relay-proxy server image tag. Verified as a real, current release via the
-     * {@code gofeatureflag/go-feature-flag} Docker Hub tag list and the
-     * {@code thomaspoignant/go-feature-flag} GitHub releases page (tagged {@code v1.55.0}, released
-     * 2026-07-02). Deliberately not {@code :latest} -- this harness exists to produce comparable
-     * latency numbers across runs, and {@code :latest} would let the server build silently drift
-     * between runs taken weeks apart.
+     * How often in-process mode polls the relay-proxy for flag-configuration changes. This affects
+     * config freshness only, not per-evaluation latency -- once a config is loaded, in-process
+     * evaluation runs locally via WASM with no network call, so this interval never sits on the hot
+     * path being measured.
+     */
+    private static final long FLAG_CONFIG_POLL_INTERVAL_MILLIS = 5_000L;
+
+    /**
+     * Pinned relay-proxy server image tag. Verified as a real, current release (tagged {@code
+     * v1.55.0}, released 2026-07-02). Deliberately not {@code :latest} -- this harness exists to
+     * produce comparable latency numbers across runs, and {@code :latest} would let the server build
+     * silently drift between runs taken weeks apart.
      */
     private static final String RELAY_PROXY_IMAGE = "gofeatureflag/go-feature-flag:v1.55.0";
 
     public static void main(String[] args) {
         try (GenericContainer<?> relayProxy = startRelayProxy()) {
             String endpoint = "http://" + relayProxy.getHost() + ":" + relayProxy.getMappedPort(RELAY_PROXY_PORT);
+            try {
+                System.out.println("=== Embedded mode (IN_PROCESS evaluation) -- Gate 1 PRIMARY evidence ===");
+                System.out.println("Flag config is fetched from the relay-proxy at startup and polled for changes;");
+                System.out.println("each evaluation runs locally via the bundled WASM evaluator (Chicory), with no");
+                System.out.println("per-evaluation network hop -- the mode Gate 1's pass criterion actually describes.");
+                runSweep("embedded", endpoint, EvaluationType.IN_PROCESS);
 
-            System.out.println("=== Relay-proxy mode (REMOTE evaluation) ===");
-            System.out.println("This module's pinned GOFF provider (0.4.3) has no embedded/IN_PROCESS");
-            System.out.println("evaluation mode -- see GoffBenchmarkHarness's class javadoc and the module");
-            System.out.println("README for why, and for what the design spec's Gate 1 embedded-mode");
-            System.out.println("requirement still needs before it can be satisfied.");
-            runSweep(endpoint);
+                System.out.println();
+                System.out.println("=== Relay-proxy mode (REMOTE evaluation) -- Gate 1 SECONDARY evidence ===");
+                System.out.println("Every evaluation is an HTTP round trip to the relay-proxy -- a sidecar-shaped");
+                System.out.println("network hop (see feature-flags-research-gaps-v2.md Thread 5), a different cost");
+                System.out.println("profile. Run and labelled separately; not a substitute for the embedded numbers.");
+                runSweep("relay-proxy", endpoint, EvaluationType.REMOTE);
+            } finally {
+                OpenFeatureAPI.getInstance().shutdown();
+            }
         }
     }
 
@@ -178,14 +165,14 @@ public final class GoffBenchmarkHarness {
         return container;
     }
 
-    private static void runSweep(String endpoint) {
-        Client client = buildClient(endpoint);
+    private static void runSweep(String mode, String endpoint, EvaluationType evaluationType) {
+        Client client = buildClient(mode, endpoint, evaluationType);
         RateLimitedLoadDriver driver = new RateLimitedLoadDriver();
         EvaluationContext context = new ImmutableContext("benchmark-user");
 
         for (int rate : RATE_TIERS_PER_SECOND) {
             LoadTestResult result = driver.run(
-                    "relay-proxy @ " + rate + " req/s",
+                    mode + " @ " + rate + " req/s",
                     rate,
                     DURATION_SECONDS_PER_TIER,
                     () -> evaluateOrThrow(client, context));
@@ -208,22 +195,29 @@ public final class GoffBenchmarkHarness {
         }
     }
 
-    private static Client buildClient(String endpoint) {
-        GoFeatureFlagProviderOptions options = GoFeatureFlagProviderOptions.builder()
+    private static Client buildClient(String domain, String endpoint, EvaluationType evaluationType) {
+        var builder = GoFeatureFlagProviderOptions.builder()
                 .endpoint(endpoint)
-                .timeout(REQUEST_TIMEOUT_MILLIS)
-                .build();
+                .evaluationType(evaluationType)
+                .timeout(REQUEST_TIMEOUT_MILLIS);
+        if (evaluationType == EvaluationType.IN_PROCESS) {
+            builder.flagChangePollingIntervalMs(FLAG_CONFIG_POLL_INTERVAL_MILLIS);
+        }
+        GoFeatureFlagProviderOptions options = builder.build();
 
         FeatureProvider provider;
         try {
             provider = new GoFeatureFlagProvider(options);
         } catch (InvalidOptions e) {
-            throw new IllegalStateException("GOFF provider rejected options for endpoint " + endpoint, e);
+            throw new IllegalStateException(
+                    "GOFF provider rejected options for endpoint " + endpoint + " (mode=" + domain + ")", e);
         }
 
+        // Bind each mode to its own OpenFeature domain so the embedded and relay-proxy sweeps use
+        // independent providers instead of clobbering a single global default provider.
         OpenFeatureAPI api = OpenFeatureAPI.getInstance();
-        api.setProviderAndWait(provider);
-        return api.getClient();
+        api.setProviderAndWait(domain, provider);
+        return api.getClient(domain);
     }
 
     private GoffBenchmarkHarness() {
